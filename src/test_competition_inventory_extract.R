@@ -20,6 +20,10 @@ element_click(showActiveID)
 
 showCompletedID <- element_xpath_find(value='//*[@id="competitions-filter"]/div[2]/ul/li[2]/label')
 element_click(showCompletedID)
+Sys.sleep(3)   #wait until page refreshes - not ideal solution
+
+allCompetitionID <- element_xpath_find(value='//*[@id="all-or-enterable"]/ul/li/label')
+element_click(allCompetitionID)
 
 competition.inventory.page <- htmlParse(page_source())
 
@@ -29,26 +33,116 @@ competition.table <- xpathApply(competition.inventory.page,'//*[@id="competition
 # extract out each row in the competition table
 competitions <- xpathApply(competition.table[[1]],"tr")
 
-# define function to extract out comeptition data
-getCompetitonData <- function(one.row) {
-    competition.name <- xmlValue(xpathApply(one.row,"td[1]/div/a/h4")[[1]])
-    competition.url <- xmlAttrs(xpathApply(one.row,"td[1]/div/a")[[1]])["href"]
-    prize <- xmlValue(xpathApply(one.row,"td[2]")[[1]])
-    number.of.teams <- xmlValue(xpathApply(one.row,"td[3]")[[1]])
+
+# extract data about teams participating in the competition
+extractTeamData <- function(team) {
     
-    df <- data.frame(competition.name,
-                     competition.url,
-                     prize,
-                     number.of.teams,
-                     stringsAsFactors=FALSE)
-    return(df)
+    # extract place of team
+    team.place <- xmlValue(getNodeSet(team,"td[@class='leader-number']")[[1]])
+    
+    # determine type of team single player or multiple player team
+    team.info <- getNodeSet(team,"td/div/a[contains(@class,'team-link')]")
+    team.name <- xmlValue(team.info[[1]])
+    team.type <- xmlAttrs(team.info[[1]])
+    team.type <- team.type["class"]
+    if (team.type == "team-link team-player") {
+        # multiple player team
+        team.members <- getNodeSet(team,"td/div/ul/li")
+        
+        member.url <- sapply(team.members,function(anode){
+            x <- xmlAttrs(getNodeSet(anode,"a")[[1]])
+            x["href"]
+        })
+        
+        member.name <- sapply(team.members,function(anode){
+            x <- unlist(getNodeSet(anode,"a",fun=xmlValue))
+        })
+    } else {
+        # single player team
+        member.url <- xmlAttrs(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])["href"]
+        member.name <- xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])
+    }
+    
+    # determine member location
+    member.location <- sapply(member.url,function(url.frag){
+        #retrieve member profile page
+        post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+        Sys.sleep(2)  # delay to allow page to load before getting page, this a heuristic
+        
+        #get member page data
+        member.page <- htmlParse(page_source())
+        
+        #find user location
+        location <- geocode(xmlValue(xpathApply(member.page,'//dd[@data-bind="text: location"]')[[1]]),
+                            output="more")$country
+        
+    })
+    
+    # pro-rate place medals
+    medal.weight <- 1/length(member.url)
+    
+    data.frame(team.type=team.type,team.place=team.place,
+               team.name=team.name,
+               member.name=member.name,
+               member.url=member.url,
+               member.location=member.location,
+               medal.weight=medal.weight,
+               stringsAsFactors=FALSE)
+    
 }
 
+
+# define function to extract out comeptition data
+getCompetitonData <- function(comp.idx) {
+    
+    one.row <- xpathApply(competition.inventory.page,
+                          paste0('//*[@id="competitions-table"]/tbody/tr[',
+                                    comp.idx,']'))[[1]]
+    
+    competition.name <- xmlValue(xpathApply(one.row,"td[1]/div/a/h4")[[1]])
+    competition.url <- xmlAttrs(xpathApply(one.row,"td[1]/div/a")[[1]])["href"]
+    type <- xmlValue(xpathApply(one.row,"td[2]")[[1]])
+    number.of.teams <- xmlValue(xpathApply(one.row,"td[3]")[[1]])
+    
+    # stqndardize type attribute and create prize.amount
+    type <- gsub(",","",type)
+    type <- gsub("\\$","",type)
+    if (grepl("\\d+",type)) {
+        prize.amount <- as.numeric(type)
+        competition.type <- "standard"
+    } else {
+        competition.type <- type
+        prize.amount <- NA
+    }
+    
+    #create the data frame for the competiton
+    df.comp <- data.frame(competition.name,
+                     competition.url,
+                     competition.type,
+                     prize.amount,
+                     number.of.teams,
+                     stringsAsFactors=FALSE)
+    
+#     # extract out team data
+#     # find leaderboard for the competition
+#     compID <- element_xpath_find("td[1]/div/a")
+#     element_click(compID)
+    
+    # return competition and team data
+    return(df.comp)
+}
+
+
+
 # create data frame for all completed competitions
-ll <- lapply(competitions,getCompetitonData)
+# ll <- lapply(competitions,getCompetitonData
+ll <- lapply(1:length(competitions),getCompetitonData)
 competition.df <- do.call(rbind,ll)
 
 save(competition.df,file="./competition.RDATA")
+
+# //*[@id="competition-dashboard-dropdown"]/li[@class=‘cd-leaderboard’]/a
+# //*[@id="leaderboard-table"]/tbody
 
 
 quit_session()
