@@ -9,7 +9,7 @@ library(Rwebdriver)
 
 competition.list.url <- "https://www.kaggle.com/competitions"
 
-COMPETITON.URL.PREFIX <- "ttps://www.kaggle.com/c"
+COMPETITON.URL.PREFIX <- "https://www.kaggle.com/c"
 PLAYER.URL.PREFIX <- "https://www.kaggle.com"
 
 # start up RWebdriver to access member profile data
