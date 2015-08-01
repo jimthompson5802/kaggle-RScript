@@ -61,12 +61,5 @@ head(moneyTab)
 
 quit_session()
 
-# player.url <- paste0(PLAYER.URL.PREFIX,df[1,"member.url"])
-# webpage <- getURL(player.url)
-# webpage <- readLines(tc <- textConnection(webpage)); close(tc)
-# player.html <- htmlParse(webpage)
-# 
-# player <- xpathApply(player.html,"//div[@class='profile2-col-section profile2-2cols']")
-# player.data <- getNodeSet(player[[1]],"div/div/div/dl")
-# xmlValue(player.data[[1]])
+
 
