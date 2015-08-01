@@ -69,6 +69,7 @@ extractTeamData <- function(team) {
     member.location <- sapply(member.url,function(url.frag){
         #retrieve member profile page
         post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+        Sys.sleep(2)  # delay to allow page to load before getting page, this a heuristic
         
         #get member page data
         member.page <- htmlParse(page_source())
