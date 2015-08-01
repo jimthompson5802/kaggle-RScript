@@ -87,7 +87,8 @@ extractTeamData <- function(team) {
                member.name=member.name,
                member.url=member.url,
                member.location=member.location,
-               medal.weight=medal.weight)
+               medal.weight=medal.weight,
+               stringsAsFactors=FALSE)
 
 }
 
@@ -100,6 +101,8 @@ competition.name <- xmlValue(getNodeSet(competition.info.node[[1]],"//h1/a")[[1]
 competition.date <- xmlValue(getNodeSet(competition.info.node[[1]],
                                         "//div[@id='comp-header-stats']/div[@id='comp-header-stats-end']")[[1]])
 ptr <- regexpr("\\d{1,2} \\w{3} \\d\\d\\d\\d",competition.date,ignore.case=TRUE)
-substr(competition.date,ptr,ptr+attr(ptr,"match.length")-1)
+competition.end.date <- substr(competition.date,ptr,ptr+attr(ptr,"match.length")-1)
+
+df <- cbind(competition.name,competition.end.date,df,stringsAsFactors=FALSE)
 
 quit_session()
