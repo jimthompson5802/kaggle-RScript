@@ -4,11 +4,16 @@
 
 library(XML)
 library(RCurl)
+library(ggmap)
+library(Rwebdriver)
 
 competition.list.url <- "https://www.kaggle.com/competitions"
 
 COMPETITON.URL.PREFIX <- "ttps://www.kaggle.com/c"
 PLAYER.URL.PREFIX <- "https://www.kaggle.com"
+
+# start up RWebdriver to access member profile data
+start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
 
 url <- "https://www.kaggle.com/c/otto-group-product-classification-challenge/leaderboard"
 
@@ -60,17 +65,33 @@ extractTeamData <- function(team) {
         member.name <- xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])
     }
     
+    # determine member location
+    member.location <- sapply(member.url,function(url.frag){
+        #retrieve member profile page
+        post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+        
+        #get member page data
+        member.page <- htmlParse(page_source())
+        
+        #find user location
+        location <- geocode(xmlValue(xpathApply(member.page,'//dd[@data-bind="text: location"]')[[1]]),
+                            output="more")$country
+        
+    })
+    
     # pro-rate place medals
     medal.weight <- 1/length(member.url)
     
     data.frame(team.type=team.type,team.place=team.place,
                team.name=team.name,
                member.name=member.name,
-               member.url=member.url,medal.weight)
+               member.url=member.url,
+               member.location=member.location,
+               medal.weight=medal.weight)
 
 }
 
-ll <- lapply(teams,extractTeamData)
+ll <- lapply(winners,extractTeamData)
 
 df <- do.call(rbind,ll)
 
@@ -81,3 +102,4 @@ competition.date <- xmlValue(getNodeSet(competition.info.node[[1]],
 ptr <- regexpr("\\d{1,2} \\w{3} \\d\\d\\d\\d",competition.date,ignore.case=TRUE)
 substr(competition.date,ptr,ptr+attr(ptr,"match.length")-1)
 
+quit_session()
