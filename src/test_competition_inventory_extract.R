@@ -5,10 +5,6 @@
 library(Rwebdriver)
 library(XML)
 
-# opts <- list(proxy="127.0.0.1:4444")
-# options(RCurlOptions=opts)
-
-
 start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
 
 post.url(url="https://www.kaggle.com/competitions")
@@ -51,6 +47,8 @@ getCompetitonData <- function(one.row) {
 # create data frame for all completed competitions
 ll <- lapply(competitions,getCompetitonData)
 competition.df <- do.call(rbind,ll)
+
+save(competition.df,file="./competition.RDATA")
 
 
 quit_session()
