@@ -19,7 +19,7 @@ post.url(url)
 extractTeamData <- function(team) {
     
     # extract place of team
-    team.place <- xmlValue(getNodeSet(team,"td[@class='leader-number']")[[1]])
+    team.place <- as.integer(xmlValue(getNodeSet(team,"td[@class='leader-number']")[[1]]))
     
     # determine type of team single player or multiple player team
     team.info <- getNodeSet(team,"td/div/a[contains(@class,'team-link')]")
@@ -44,9 +44,7 @@ extractTeamData <- function(team) {
         member.name <- xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])
     }
     
-    cat("before winner test:",team.place,"\n")
     if (team.place <= 3) {
-        cat("looking up winner location:",team.place,"\n")
         flush.console()
         # determine member location
         member.location <- sapply(member.url,function(url.frag){
@@ -115,7 +113,7 @@ extractTeamDataWrapper <- function(lb.idx) {
     return(df)
 }
 
-ll <- lapply(1:20,extractTeamDataWrapper)
+ll <- lapply(1:length(leaderboard),extractTeamDataWrapper)
 
 df <- do.call(rbind,ll)
 # 
