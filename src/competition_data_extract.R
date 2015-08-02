@@ -151,7 +151,7 @@ extractTeamDataWrapper <- function(lb.idx,lb.html) {
 
 # define function to extract out comeptition data
 getCompetitonData <- function(comp.idx) {
-    cat("starting compeition:",comp.idx,"\n")
+    cat("starting compeition:",comp.idx,"out of",length(competitions),"\n")
     flush.console()
     
     one.row <- xpathApply(competition.inventory.page,
@@ -209,6 +209,11 @@ getCompetitonData <- function(comp.idx) {
         
         # find link for leaderboard and click on it
         lbID <- element_xpath_find("//*[@id='competition-dashboard-dropdown']/li[@class='cd-leaderboard']/ul/li[2]/a")
+        if (length(lbID) == 0) {
+            # try alternative location for lb button
+            lbID <- element_xpath_find('//*[@id="competition-dashboard-dropdown"]/li[4]/a')
+        }
+        
         element_click(lbID)
         
         lb.html <- htmlParse(page_source())
@@ -280,7 +285,7 @@ getCompetitonData <- function(comp.idx) {
 
 # create data frame for all completed competitions
 # ll <- lapply(competitions,getCompetitonData
-ll <- lapply(1:10,getCompetitonData)
+ll <- lapply(1:length(competitions),getCompetitonData)
 
 
 competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
@@ -288,11 +293,7 @@ team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
 
 save(competition.df,team.df,file="./competition_data.RDATA")
 
-# 
-# # //*[@id="leaderboard-table"]/tbody
-# 
-# 
-# quit_session()
+quit_session()
 
 
 
