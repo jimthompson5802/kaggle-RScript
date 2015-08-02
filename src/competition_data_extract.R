@@ -151,6 +151,8 @@ extractTeamDataWrapper <- function(lb.idx,lb.html) {
 
 # define function to extract out comeptition data
 getCompetitonData <- function(comp.idx) {
+    cat("starting compeition:",comp.idx,"\n")
+    flush.console()
     
     one.row <- xpathApply(competition.inventory.page,
                           paste0('//*[@id="competitions-table"]/tbody/tr[',
@@ -161,6 +163,10 @@ getCompetitonData <- function(comp.idx) {
     type <- xmlValue(xpathApply(one.row,"td[2]")[[1]])
     number.of.teams <- xmlValue(xpathApply(one.row,"td[3]")[[1]])
     deadline <- xmlValue(xpathApply(one.row,"td[4]")[[1]])
+    
+    # set default values
+    start.date <- NA
+    end.date <- NA
     
     # stqndardize type attribute and create prize.amount
     type <- gsub(",","",type)
@@ -173,14 +179,6 @@ getCompetitonData <- function(comp.idx) {
         prize.amount <- NA
     }
     
-    #create the data frame for the competiton
-    df.comp <- data.frame(competition.name,
-                     competition.url,
-                     competition.type,
-                     prize.amount,
-                     number.of.teams,
-                     deadline,
-                     stringsAsFactors=FALSE)
     ####
     # extract out team data
     ####
@@ -194,7 +192,22 @@ getCompetitonData <- function(comp.idx) {
         cat("specific competition on page:",get.url(),"\n")
         flush.console()
         
-        # click link to display leaderboard
+        # find the location for start and end date data
+        element_xpath_find('//*[@id="end-time-note"]/strong[1]')
+        # get start and end date for competitons
+        competition.html <- htmlParse(page_source())
+        start.node <- xpathApply(competition.html,'//*[@id="end-time-note"]/text()[2]')
+        if (length(start.node) == 1) {
+            start.date <- xmlValue(start.node[[1]])
+        }
+        
+        end.node <- xpathApply(competition.html,'//*[@id="end-time-note"]/text()[3]')
+        if (length(start.node) == 1) {
+            end.date <- xmlValue(end.node[[1]])
+        } 
+        
+        
+        # find link for leaderboard and click on it
         lbID <- element_xpath_find("//*[@id='competition-dashboard-dropdown']/li[@class='cd-leaderboard']/ul/li[2]/a")
         element_click(lbID)
         
@@ -236,7 +249,30 @@ getCompetitonData <- function(comp.idx) {
     } else {
         df.team <- NULL
     }
+    
+    ###
     # return competition and team data
+    ###
+    
+    #create the data frame for the competiton
+    df.comp <- data.frame(competition.name,
+                          competition.url,
+                          competition.type,
+                          prize.amount,
+                          number.of.teams,
+                          deadline,
+                          start.date,
+                          end.date,
+                          stringsAsFactors=FALSE)
+    
+    # create data frame for team data
+    if (!is.null(df.team)) {
+        df.team <- cbind(competition.name,df.team,stringsAsFactors=FALSE)
+    }
+    
+    cat("completed:",comp.idx,", ",competition.name,"\n")
+    flush.console()
+    
     return(list(df.comp=df.comp,df.team=df.team))
 }
 
@@ -249,9 +285,9 @@ ll <- lapply(1:10,getCompetitonData)
 
 competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
 team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
-# 
-# save(competition.df,file="./competition.RDATA")
-# 
+
+save(competition.df,team.df,file="./competition_data.RDATA")
+
 # 
 # # //*[@id="leaderboard-table"]/tbody
 # 
