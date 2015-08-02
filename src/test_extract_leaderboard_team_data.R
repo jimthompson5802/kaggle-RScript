@@ -91,16 +91,8 @@ extractTeamData <- function(team) {
 
 }
 
-lb.html <- htmlParse(page_source())
-
-# isolate the html table containing leaderboard data
-lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
-
-# extract out each row in the leaderboard 
-leaderboard <- xpathApply(lb.table[[1]],"tr")
-
 extractTeamDataWrapper <- function(lb.idx) {
-
+    
     one.row <- xpathApply(lb.html,
                           paste0('//*[@id="leaderboard-table"]/tbody/tr[',
                                  lb.idx,']'))[[1]] 
@@ -111,9 +103,17 @@ extractTeamDataWrapper <- function(lb.idx) {
     } else {
         df <- NULL
     }
-        
+    
     return(df)
 }
+
+lb.html <- htmlParse(page_source())
+
+# isolate the html table containing leaderboard data
+lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
+
+# extract out each row in the leaderboard 
+leaderboard <- xpathApply(lb.table[[1]],"tr")
 
 ll <- lapply(1:length(leaderboard),extractTeamDataWrapper)
 
