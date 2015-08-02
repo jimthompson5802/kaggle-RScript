@@ -182,6 +182,7 @@ getCompetitonData <- function(comp.idx) {
     ####
     # extract out team data
     ####
+    df.team <- NULL  # assume no data
     # get team data only for standard competitions and non-zero time count
     if (competition.type == "standard" && number.of.teams > 0) {
         # go to competition specific page
@@ -209,32 +210,46 @@ getCompetitonData <- function(comp.idx) {
         
         # find link for leaderboard and click on it
         lbID <- element_xpath_find("//*[@id='competition-dashboard-dropdown']/li[@class='cd-leaderboard']/ul/li[2]/a")
+        
+        # did we find a hyper-link to leaderboard?
         if (length(lbID) == 0) {
-            # try alternative location for lb button
+            # no...try alternative location for lb button
             lbID <- element_xpath_find('//*[@id="competition-dashboard-dropdown"]/li[4]/a')
         }
         
-        element_click(lbID)
+        # did we really get a hyper-link to leaderboard?
+        # if no leaderboard hyper-link found, then bypass and return NULL df.team
+        if (length(lbID) != 0) {
+            # yes...found hyperlink, go to leaderboard
+            element_click(lbID)
+            lb.html <- htmlParse(page_source())
+            
+            # isolate the html table containing data about completed competitions
+            lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
+            
+            # extract out each row in the competition table
+            leaderboard <- xpathApply(lb.table[[1]],"tr")
+            
+            ll <- lapply(1:length(leaderboard),extractTeamDataWrapper,lb.html)
+            
+            df.team <- do.call(rbind,ll)
+            
+            # go back to competition inventory page
+            page_back(2)
+            cat("after 2 back button on page:",get.url(),"\n")
+            flush.console()
+
+        } else {
+            # go back only one page to competition inventory page
+            page_back(2)
+            cat("after 1 back button on page:",get.url(),"\n")
+            flush.console()
+        }
         
-        lb.html <- htmlParse(page_source())
-        
-        # isolate the html table containing data about completed competitions
-        lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
-        
-        # extract out each row in the competition table
-        leaderboard <- xpathApply(lb.table[[1]],"tr")
-        
-        ll <- lapply(1:length(leaderboard),extractTeamDataWrapper,lb.html)
-        
-        df.team <- do.call(rbind,ll)
-        
-        # go back to competition inventory page
-        page_back(2)
-        cat("after back button on page:",get.url(),"\n")
-        flush.console()
+        # wait for competition inventory page to refresh
         buttonID <- element_xpath_find(value='//*[@id="all-switch"]')
         element_click(buttonID)
-        # Sys.sleep(1)
+        
         showAllID <- element_xpath_find('//*[@id="all-or-enterable"]/ul/li/label')
         element_click(showAllID)
         
@@ -251,8 +266,7 @@ getCompetitonData <- function(comp.idx) {
             Sys.sleep(1)
             loop.counter <- loop.counter + 1
         }
-    } else {
-        df.team <- NULL
+        
     }
     
     ###
@@ -284,7 +298,7 @@ getCompetitonData <- function(comp.idx) {
 
 
 # create data frame for all completed competitions
-# ll <- lapply(competitions,getCompetitonData
+# ll <- lapply(107:110,getCompetitonData)  #for debugging
 ll <- lapply(1:length(competitions),getCompetitonData)
 
 
