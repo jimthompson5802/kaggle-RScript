@@ -86,9 +86,15 @@ extractTeamData <- function(team) {
         member.page <- htmlParse(page_source())
         
         #find user location
-        location <- geocode(xmlValue(xpathApply(member.page,'//dd[@data-bind="text: location"]')[[1]]),
-                            output="more")$country
+        user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
         
+        if (nchar(user.location) >0 ) {
+            geocoded.location <- geocode(user.location,output = "more")$country
+        } else {
+            geocoded.location <- "unknown"
+        }
+        
+        return(geocoded.location)
     })
     
     # pro-rate place medals
@@ -156,8 +162,11 @@ getCompetitonData <- function(comp.idx) {
         
         lb.html <- htmlParse(page_source())
         
+        # isolate the html table containing data about completed competitions
+        lb.table <- xpathApply(lb.html,'//*[@id="competitions-table"]/tbody')
         
-        
+        # extract out each row in the competition table
+        leaderboard <- xpathApply(lb.table[[1]],"tr")
     
         # go back to competition inventory page
         page_back(2)
