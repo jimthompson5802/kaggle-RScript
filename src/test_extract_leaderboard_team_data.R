@@ -6,6 +6,7 @@ library(XML)
 library(RCurl)
 library(ggmap)
 library(Rwebdriver)
+library(tm)
 
 PLAYER.URL.PREFIX <- "https://www.kaggle.com"
 
@@ -23,7 +24,7 @@ extractTeamData <- function(team) {
     
     # determine type of team single player or multiple player team
     team.info <- getNodeSet(team,"td/div/a[contains(@class,'team-link')]")
-    team.name <- xmlValue(team.info[[1]])
+    team.name <- trimws(stripWhitespace(xmlValue(team.info[[1]])))
     team.type <- xmlAttrs(team.info[[1]])
     team.type <- team.type["class"]
     if (team.type == "team-link team-player") {
@@ -32,16 +33,18 @@ extractTeamData <- function(team) {
         
         member.url <- sapply(team.members,function(anode){
             x <- xmlAttrs(getNodeSet(anode,"a")[[1]])
-            x["href"]
+            trimws(stripWhitespace(x["href"]))
         })
         
         member.name <- sapply(team.members,function(anode){
             x <- unlist(getNodeSet(anode,"a",fun=xmlValue))
+            trimws(stripWhitespace(x))
         })
+        
     } else {
         # single player team
         member.url <- xmlAttrs(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])["href"]
-        member.name <- xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])
+        member.name <- trimws(stripWhitespace(xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])))
     }
     
     if (team.place <= 3) {
