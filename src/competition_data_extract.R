@@ -4,6 +4,9 @@
 
 library(Rwebdriver)
 library(XML)
+library(ggmap)
+library(tm)
+library(plyr)
 
 start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
 implicit_wait(5000)
@@ -55,27 +58,34 @@ extractTeamData <- function(team) {
     
     # determine type of team single player or multiple player team
     team.info <- getNodeSet(team,"td/div/a[contains(@class,'team-link')]")
-    team.name <- trimws(stripWhitespace(xmlValue(team.info[[1]])))
-    team.type <- xmlAttrs(team.info[[1]])
-    team.type <- team.type["class"]
-    if (team.type == "team-link team-player") {
-        # multiple player team
-        team.members <- getNodeSet(team,"td/div/ul/li")
-        
-        member.url <- sapply(team.members,function(anode){
-            x <- xmlAttrs(getNodeSet(anode,"a")[[1]])
-            trimws(stripWhitespace(x["href"]))
-        })
-        
-        member.name <- sapply(team.members,function(anode){
-            x <- unlist(getNodeSet(anode,"a",fun=xmlValue))
-            trimws(stripWhitespace(x))
-        })
-        
+    if (length(team.info) > 0) {
+        team.name <- trimws(stripWhitespace(xmlValue(team.info[[1]])))
+        team.type <- xmlAttrs(team.info[[1]])
+        team.type <- team.type["class"]
+        if (team.type == "team-link team-player") {
+            # multiple player team
+            team.members <- getNodeSet(team,"td/div/ul/li")
+            
+            member.url <- sapply(team.members,function(anode){
+                x <- xmlAttrs(getNodeSet(anode,"a")[[1]])
+                trimws(stripWhitespace(x["href"]))
+            })
+            
+            member.name <- sapply(team.members,function(anode){
+                x <- unlist(getNodeSet(anode,"a",fun=xmlValue))
+                trimws(stripWhitespace(x))
+            })
+            
+        } else {
+            # single player team
+            member.url <- xmlAttrs(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])["href"]
+            member.name <- trimws(stripWhitespace(xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])))
+        }
     } else {
-        # single player team
-        member.url <- xmlAttrs(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])["href"]
-        member.name <- trimws(stripWhitespace(xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])))
+        team.type <- "anonymous-type"
+        team.name <- "Anonymous"
+        member.name <- "Not Given"
+        member.url <- "Not Given"
     }
     
     if (team.place <= 3) {
@@ -131,7 +141,7 @@ extractTeamDataWrapper <- function(lb.idx,lb.html) {
     
     df <- NULL
     if (length(team.place) == 1 && length(xmlValue(team.place[[1]])) > 0) {
-        if (as.integer(xmlValue(team.place[[1]])) >= 1) {
+        if (grepl("\\d+",xmlValue(team.place[[1]]))) {
             df <- extractTeamData(one.row)
         }
     }
@@ -234,10 +244,11 @@ getCompetitonData <- function(comp.idx) {
 
 # create data frame for all completed competitions
 # ll <- lapply(competitions,getCompetitonData
-ll <- lapply(1:3,getCompetitonData)
+ll <- lapply(1:10,getCompetitonData)
 
 
-# competition.df <- do.call(rbind,ll)
+competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
+team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
 # 
 # save(competition.df,file="./competition.RDATA")
 # 
