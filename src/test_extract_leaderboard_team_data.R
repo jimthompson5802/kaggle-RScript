@@ -45,7 +45,7 @@ extractTeamData <- function(team) {
     }
     
     if (team.place <= 3) {
-        flush.console()
+
         # determine member location
         member.location <- sapply(member.url,function(url.frag){
             #retrieve member profile page
@@ -97,8 +97,7 @@ lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
 leaderboard <- xpathApply(lb.table[[1]],"tr")
 
 extractTeamDataWrapper <- function(lb.idx) {
-    cat("lb.idx:",lb.idx,"\n")
-    flush.console()
+
     one.row <- xpathApply(lb.html,
                           paste0('//*[@id="leaderboard-table"]/tbody/tr[',
                                  lb.idx,']'))[[1]] 
