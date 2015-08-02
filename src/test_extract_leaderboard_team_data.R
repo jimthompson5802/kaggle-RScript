@@ -7,9 +7,6 @@ library(RCurl)
 library(ggmap)
 library(Rwebdriver)
 
-competition.list.url <- "https://www.kaggle.com/competitions"
-
-COMPETITON.URL.PREFIX <- "https://www.kaggle.com/c"
 PLAYER.URL.PREFIX <- "https://www.kaggle.com"
 
 # start up RWebdriver to access member profile data
@@ -17,25 +14,7 @@ start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
 
 url <- "https://www.kaggle.com/c/otto-group-product-classification-challenge/leaderboard"
 
-webpage <- getURL(url)
-webpage <- readLines(tc <- textConnection(webpage)); close(tc)
-html1 <- htmlParse(webpage)
-
-# find leader table
-winners <- xpathApply(html1,"//table/tr[td[@class='leader-number']<=3]")
-teams <- xpathApply(html1,"//table/tr[td[@class='leader-number']>=1]")
-
-score <- xmlValue(getNodeSet(winners[[2]],"td/abbr[@class='score']")[[1]])
-
-one.team <- getNodeSet(winners[[1]],
-                      "td/div/a[contains(@class,'team-link')]/parent::node()/parent::node()")
-
-team.type <- getNodeSet(winners[[1]],"td/div/a")
-
-team.place <- xmlValue(getNodeSet(winners[[2]],"td[@class='leader-number']")[[1]])
-
-team.members <- getNodeSet(winners[[1]],"td/div/ul/li")
-x <- xmlAttrs(getNodeSet(team.members[[1]],"a")[[1]])
+post.url(url)
 
 extractTeamData <- function(team) {
     
@@ -65,23 +44,41 @@ extractTeamData <- function(team) {
         member.name <- xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])
     }
     
-    # determine member location
-    member.location <- sapply(member.url,function(url.frag){
-        #retrieve member profile page
-        post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
-        Sys.sleep(2)  # delay to allow page to load before getting page, this a heuristic
+    cat("before winner test:",team.place,"\n")
+    if (team.place <= 3) {
+        cat("looking up winner location:",team.place,"\n")
+        flush.console()
+        # determine member location
+        member.location <- sapply(member.url,function(url.frag){
+            #retrieve member profile page
+            post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+            # Sys.sleep(2)
+            element_xpath_find('//*[@id="profile-bio"]/h2')
+            
+            #get member page data
+            member.page <- htmlParse(page_source())
+            
+            #find user location
+            user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
+            
+            if (nchar(user.location) > 0 ) {
+                geocoded.location <- geocode(user.location,output = "more")$country
+            } else {
+                geocoded.location <- "unknown"
+            }
+            
+            page_back()
+            element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
+            
+            return(geocoded.location)
+        })
         
-        #get member page data
-        member.page <- htmlParse(page_source())
-        
-        #find user location
-        location <- geocode(xmlValue(xpathApply(member.page,'//dd[@data-bind="text: location"]')[[1]]),
-                            output="more")$country
-        
-    })
-    
-    # pro-rate place medals
-    medal.weight <- 1/length(member.url)
+        # pro-rate place medals
+        medal.weight <- 1/length(member.url)
+    } else {
+        member.location <- NA
+        medal.weight <- NA
+    }
     
     data.frame(team.type=team.type,team.place=team.place,
                team.name=team.name,
@@ -93,17 +90,42 @@ extractTeamData <- function(team) {
 
 }
 
-ll <- lapply(winners,extractTeamData)
+lb.html <- htmlParse(page_source())
+
+# isolate the html table containing leaderboard data
+lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
+
+# extract out each row in the leaderboard 
+leaderboard <- xpathApply(lb.table[[1]],"tr")
+
+extractTeamDataWrapper <- function(lb.idx) {
+    cat("lb.idx:",lb.idx,"\n")
+    flush.console()
+    one.row <- xpathApply(lb.html,
+                          paste0('//*[@id="leaderboard-table"]/tbody/tr[',
+                                 lb.idx,']'))[[1]] 
+    team.place <- getNodeSet(one.row,"td[@class='leader-number']")
+    
+    if (length(team.place) == 1 && xmlValue(team.place[[1]]) >= 1) {
+        df <- extractTeamData(one.row)
+    } else {
+        df <- NULL
+    }
+        
+    return(df)
+}
+
+ll <- lapply(1:20,extractTeamDataWrapper)
 
 df <- do.call(rbind,ll)
-
-competition.info.node <- xpathApply(html1,"//header[@id='comp-header']")
-competition.name <- xmlValue(getNodeSet(competition.info.node[[1]],"//h1/a")[[1]])
-competition.date <- xmlValue(getNodeSet(competition.info.node[[1]],
-                                        "//div[@id='comp-header-stats']/div[@id='comp-header-stats-end']")[[1]])
-ptr <- regexpr("\\d{1,2} \\w{3} \\d\\d\\d\\d",competition.date,ignore.case=TRUE)
-competition.end.date <- substr(competition.date,ptr,ptr+attr(ptr,"match.length")-1)
-
-df <- cbind(competition.name,competition.end.date,df,stringsAsFactors=FALSE)
-
-quit_session()
+# 
+# competition.info.node <- xpathApply(html1,"//header[@id='comp-header']")
+# competition.name <- xmlValue(getNodeSet(competition.info.node[[1]],"//h1/a")[[1]])
+# competition.date <- xmlValue(getNodeSet(competition.info.node[[1]],
+#                                         "//div[@id='comp-header-stats']/div[@id='comp-header-stats-end']")[[1]])
+# ptr <- regexpr("\\d{1,2} \\w{3} \\d\\d\\d\\d",competition.date,ignore.case=TRUE)
+# competition.end.date <- substr(competition.date,ptr,ptr+attr(ptr,"match.length")-1)
+# 
+# df <- cbind(competition.name,competition.end.date,df,stringsAsFactors=FALSE)
+# 
+# quit_session()
