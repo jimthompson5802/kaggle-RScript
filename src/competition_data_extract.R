@@ -82,26 +82,26 @@ extractTeamData <- function(team) {
         
         # determine member location
         member.location <- sapply(member.url,function(url.frag){
-            #retrieve member profile page
-            post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
-            # Sys.sleep(2)
-            element_xpath_find('//*[@id="profile-bio"]/h2')
-            
-            #get member page data
-            member.page <- htmlParse(page_source())
-            
-            #find user location
-            user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
-            
-            if (nchar(user.location) > 0 ) {
-                geocoded.location <- geocode(user.location,output = "more")$country
-            } else {
-                geocoded.location <- "unknown"
-            }
-            
-            page_back()
-            element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
-            
+#             #retrieve member profile page
+#             post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+#             # Sys.sleep(2)
+#             element_xpath_find('//*[@id="profile-bio"]/h2')
+#             
+#             #get member page data
+#             member.page <- htmlParse(page_source())
+#             
+#             #find user location
+#             user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
+#             
+#             if (nchar(user.location) > 0 ) {
+#                 geocoded.location <- geocode(user.location,output = "more")$country
+#             } else {
+#                 geocoded.location <- "unknown"
+#             }
+#             
+#             page_back()
+#             element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
+            geocoded.location <- NA
             return(geocoded.location)
         })
         
@@ -122,17 +122,18 @@ extractTeamData <- function(team) {
     
 }
 
-extractTeamDataWrapper <- function(lb.idx) {
+extractTeamDataWrapper <- function(lb.idx,lb.html) {
     
     one.row <- xpathApply(lb.html,
                           paste0('//*[@id="leaderboard-table"]/tbody/tr[',
                                  lb.idx,']'))[[1]] 
     team.place <- getNodeSet(one.row,"td[@class='leader-number']")
     
-    if (length(team.place) == 1 && xmlValue(team.place[[1]]) >= 1) {
-        df <- extractTeamData(one.row)
-    } else {
-        df <- NULL
+    df <- NULL
+    if (length(team.place) == 1 && length(xmlValue(team.place[[1]])) > 0) {
+        if (as.integer(xmlValue(team.place[[1]])) >= 1) {
+            df <- extractTeamData(one.row)
+        }
     }
     
     return(df)
@@ -190,12 +191,12 @@ getCompetitonData <- function(comp.idx) {
         lb.html <- htmlParse(page_source())
         
         # isolate the html table containing data about completed competitions
-        lb.table <- xpathApply(lb.html,'//*[@id="competitions-table"]/tbody')
+        lb.table <- xpathApply(lb.html,'//*[@id="leaderboard-table"]/tbody')
         
         # extract out each row in the competition table
         leaderboard <- xpathApply(lb.table[[1]],"tr")
         
-        ll <- lapply(1:length(leaderboard),extractTeamDataWrapper)
+        ll <- lapply(1:length(leaderboard),extractTeamDataWrapper,lb.html)
         
         df.team <- do.call(rbind,ll)
         
@@ -236,15 +237,15 @@ getCompetitonData <- function(comp.idx) {
 ll <- lapply(1:3,getCompetitonData)
 
 
-competition.df <- do.call(rbind,ll)
-
-save(competition.df,file="./competition.RDATA")
-
-
-# //*[@id="leaderboard-table"]/tbody
-
-
-quit_session()
+# competition.df <- do.call(rbind,ll)
+# 
+# save(competition.df,file="./competition.RDATA")
+# 
+# 
+# # //*[@id="leaderboard-table"]/tbody
+# 
+# 
+# quit_session()
 
 
 
