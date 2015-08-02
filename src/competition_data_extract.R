@@ -299,7 +299,7 @@ getCompetitonData <- function(comp.idx) {
 
 # create data frame for all completed competitions
 # ll <- lapply(107:110,getCompetitonData)  #for debugging
-ll <- lapply(1:length(competitions),getCompetitonData)
+system.time(ll <- lapply(1:length(competitions),getCompetitonData))
 
 
 competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
