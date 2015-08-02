@@ -51,11 +51,11 @@ competitions <- xpathApply(competition.table[[1]],"tr")
 extractTeamData <- function(team) {
     
     # extract place of team
-    team.place <- xmlValue(getNodeSet(team,"td[@class='leader-number']")[[1]])
+    team.place <- as.integer(xmlValue(getNodeSet(team,"td[@class='leader-number']")[[1]]))
     
     # determine type of team single player or multiple player team
     team.info <- getNodeSet(team,"td/div/a[contains(@class,'team-link')]")
-    team.name <- xmlValue(team.info[[1]])
+    team.name <- trimws(stripWhitespace(xmlValue(team.info[[1]])))
     team.type <- xmlAttrs(team.info[[1]])
     team.type <- team.type["class"]
     if (team.type == "team-link team-player") {
@@ -64,41 +64,53 @@ extractTeamData <- function(team) {
         
         member.url <- sapply(team.members,function(anode){
             x <- xmlAttrs(getNodeSet(anode,"a")[[1]])
-            x["href"]
+            trimws(stripWhitespace(x["href"]))
         })
         
         member.name <- sapply(team.members,function(anode){
             x <- unlist(getNodeSet(anode,"a",fun=xmlValue))
+            trimws(stripWhitespace(x))
         })
+        
     } else {
         # single player team
         member.url <- xmlAttrs(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])["href"]
-        member.name <- xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])
+        member.name <- trimws(stripWhitespace(xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])))
     }
     
-    # determine member location
-    member.location <- sapply(member.url,function(url.frag){
-        #retrieve member profile page
-        post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
-        # Sys.sleep(2)  # delay to allow page to load before getting page, this a heuristic
+    if (team.place <= 3) {
         
-        #get member page data
-        member.page <- htmlParse(page_source())
+        # determine member location
+        member.location <- sapply(member.url,function(url.frag){
+            #retrieve member profile page
+            post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+            # Sys.sleep(2)
+            element_xpath_find('//*[@id="profile-bio"]/h2')
+            
+            #get member page data
+            member.page <- htmlParse(page_source())
+            
+            #find user location
+            user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
+            
+            if (nchar(user.location) > 0 ) {
+                geocoded.location <- geocode(user.location,output = "more")$country
+            } else {
+                geocoded.location <- "unknown"
+            }
+            
+            page_back()
+            element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
+            
+            return(geocoded.location)
+        })
         
-        #find user location
-        user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
-        
-        if (nchar(user.location) >0 ) {
-            geocoded.location <- geocode(user.location,output = "more")$country
-        } else {
-            geocoded.location <- "unknown"
-        }
-        
-        return(geocoded.location)
-    })
-    
-    # pro-rate place medals
-    medal.weight <- 1/length(member.url)
+        # pro-rate place medals
+        medal.weight <- 1/length(member.url)
+    } else {
+        member.location <- NA
+        medal.weight <- NA
+    }
     
     data.frame(team.type=team.type,team.place=team.place,
                team.name=team.name,
@@ -110,6 +122,21 @@ extractTeamData <- function(team) {
     
 }
 
+extractTeamDataWrapper <- function(lb.idx) {
+    
+    one.row <- xpathApply(lb.html,
+                          paste0('//*[@id="leaderboard-table"]/tbody/tr[',
+                                 lb.idx,']'))[[1]] 
+    team.place <- getNodeSet(one.row,"td[@class='leader-number']")
+    
+    if (length(team.place) == 1 && xmlValue(team.place[[1]]) >= 1) {
+        df <- extractTeamData(one.row)
+    } else {
+        df <- NULL
+    }
+    
+    return(df)
+}
 
 # define function to extract out comeptition data
 getCompetitonData <- function(comp.idx) {
@@ -167,10 +194,13 @@ getCompetitonData <- function(comp.idx) {
         
         # extract out each row in the competition table
         leaderboard <- xpathApply(lb.table[[1]],"tr")
-    
+        
+        ll <- lapply(1:length(leaderboard),extractTeamDataWrapper)
+        
+        df.team <- do.call(rbind,ll)
+        
         # go back to competition inventory page
         page_back(2)
-        # Sys.sleep(3)
         cat("after back button on page:",get.url(),"\n")
         flush.console()
         buttonID <- element_xpath_find(value='//*[@id="all-switch"]')
@@ -192,7 +222,6 @@ getCompetitonData <- function(comp.idx) {
             Sys.sleep(1)
             loop.counter <- loop.counter + 1
         }
-        df.team <- NULL
     } else {
         df.team <- NULL
     }
@@ -204,7 +233,7 @@ getCompetitonData <- function(comp.idx) {
 
 # create data frame for all completed competitions
 # ll <- lapply(competitions,getCompetitonData
-ll <- lapply(1:10,getCompetitonData)
+ll <- lapply(1:3,getCompetitonData)
 
 
 competition.df <- do.call(rbind,ll)
