@@ -1,36 +1,45 @@
 ###
-#  testing Web Driver
+#  Program to extract completed competition data from kaggle.com
 ###
 
-library(Rwebdriver)
+# standard R packages
 library(XML)
 library(ggmap)
 library(tm)
 library(plyr)
 
-start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
-implicit_wait(5000)
+# non-standard package - installed from github.com
+# library(devtools)
+# install_github(repo="Rwebdriver", username="crubba")
+# Rwebdriver requires non-R software from http://www.seleniumhq.org/projects/webdriver/
+library(Rwebdriver)  
 
+# start Selenium Webdriver server prior to running this R program
+# create session to Webdriver software
+start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
+implicit_wait(5000)  # wait for 5 seconds to locate elements on web page
+
+# get initial web page for kaggle competitions
 post.url(url="https://www.kaggle.com/competitions")
 
-
-
-# find link to show all competitions
+# specify web page options to find all completed competitions
 buttonID <- element_xpath_find(value='//*[@id="all-switch"]')
 element_click(buttonID)
-# Sys.sleep(1)
 
+# uncheck Active competiton checkbox
 showActiveID <- element_xpath_find(value='//*[@id="competitions-filter"]/div[2]/ul/li[1]/label')
 element_click(showActiveID)
-# Sys.sleep(1)
+
+# check Completed competition checkbox
 showCompletedID <- element_xpath_find(value='//*[@id="competitions-filter"]/div[2]/ul/li[2]/label')
 element_click(showCompletedID)
-# Sys.sleep(3)   #wait until page refreshes - not ideal solution
 
+# click on "All Competition" radio button to force page refresh
 allCompetitionID <- element_xpath_find(value='//*[@id="all-or-enterable"]/ul/li/label')
 element_click(allCompetitionID)
 
 #wait for page to refresh and show only completed competitons
+#look for "Active" count to be zero
 competition.inventory.page <- htmlParse(page_source())
 loop.counter <- 0
 while (loop.counter < 10 && 
@@ -50,8 +59,9 @@ competition.table <- xpathApply(competition.inventory.page,'//*[@id="competition
 # extract out each row in the competition table
 competitions <- xpathApply(competition.table[[1]],"tr")
 
-# extract data about teams participating in the competition
+# extract data about one team in the competition
 extractTeamData <- function(team) {
+    # team: HTML element representing one team from a competition
     
     # extract place of team
     team.place <- as.integer(xmlValue(getNodeSet(team,"td[@class='leader-number']")[[1]]))
@@ -59,11 +69,14 @@ extractTeamData <- function(team) {
     # determine type of team single player or multiple player team
     team.info <- getNodeSet(team,"td/div/a[contains(@class,'team-link')]")
     if (length(team.info) > 0) {
+        # team member data present
         team.name <- trimws(stripWhitespace(xmlValue(team.info[[1]])))
         team.type <- xmlAttrs(team.info[[1]])
         team.type <- team.type["class"]
+        
+        #deterimine if multi-player or single player team
         if (team.type == "team-link team-player") {
-            # multiple player team
+            # multiple player team, extract element nodes for all team members
             team.members <- getNodeSet(team,"td/div/ul/li")
             
             member.url <- sapply(team.members,function(anode){
@@ -75,19 +88,21 @@ extractTeamData <- function(team) {
                 x <- unlist(getNodeSet(anode,"a",fun=xmlValue))
                 trimws(stripWhitespace(x))
             })
-            
         } else {
             # single player team
             member.url <- xmlAttrs(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])["href"]
             member.name <- trimws(stripWhitespace(xmlValue(getNodeSet(team,"td/div/a[contains(@class,'team-link')]")[[1]])))
         }
     } else {
+        # no team member info, set to default values
         team.type <- "anonymous-type"
         team.name <- "Anonymous"
         member.name <- "Not Given"
         member.url <- "Not Given"
     }
     
+    # for wining teams, extract out location and pro-rate medal weights
+    # currently code for extracting location is disabled
     if (team.place <= 3) {
         
         # determine member location
@@ -122,6 +137,7 @@ extractTeamData <- function(team) {
         medal.weight <- NA
     }
     
+    # create data frame to hold team member data
     data.frame(team.type=team.type,team.place=team.place,
                team.name=team.name,
                member.name=member.name,
@@ -132,8 +148,12 @@ extractTeamData <- function(team) {
     
 }
 
+# wrapper function to team data extraction
 extractTeamDataWrapper <- function(lb.idx,lb.html) {
+    # lb.idx: index into leaderboard table
+    # lb.html: parsed webpage displaying the leaderboard
     
+    # extract team data for specified leaderboard index value
     one.row <- xpathApply(lb.html,
                           paste0('//*[@id="leaderboard-table"]/tbody/tr[',
                                  lb.idx,']'))[[1]] 
@@ -149,15 +169,18 @@ extractTeamDataWrapper <- function(lb.idx,lb.html) {
     return(df)
 }
 
-# define function to extract out comeptition data
+# function to extract competition related data
 getCompetitonData <- function(comp.idx) {
+    # comp.idx:  index into competition table
+    
     cat("starting compeition:",comp.idx,"out of",length(competitions),"\n")
     flush.console()
     
+    # extract out competition data for specified competition index
     one.row <- xpathApply(competition.inventory.page,
                           paste0('//*[@id="competitions-table"]/tbody/tr[',
                                     comp.idx,']'))[[1]]
-    
+    # extract required data attributes
     competition.name <- xmlValue(xpathApply(one.row,"td[1]/div/a/h4")[[1]])
     competition.url <- xmlAttrs(xpathApply(one.row,"td[1]/div/a")[[1]])["href"]
     type <- xmlValue(xpathApply(one.row,"td[2]")[[1]])
@@ -181,6 +204,7 @@ getCompetitonData <- function(comp.idx) {
     
     ####
     # extract out team data
+    # for only "standard" competitions that have one or more teams
     ####
     df.team <- NULL  # assume no data
     # get team data only for standard competitions and non-zero time count
@@ -195,6 +219,7 @@ getCompetitonData <- function(comp.idx) {
         
         # find the location for start and end date data
         element_xpath_find('//*[@id="end-time-note"]/strong[1]')
+        
         # get start and end date for competitons
         competition.html <- htmlParse(page_source())
         start.node <- xpathApply(competition.html,'//*[@id="end-time-note"]/text()[2]')
@@ -207,8 +232,7 @@ getCompetitonData <- function(comp.idx) {
             end.date <- xmlValue(end.node[[1]])
         } 
         
-        
-        # find link for leaderboard and click on it
+        # find link to display leaderboard
         lbID <- element_xpath_find("//*[@id='competition-dashboard-dropdown']/li[@class='cd-leaderboard']/ul/li[2]/a")
         
         # did we find a hyper-link to leaderboard?
@@ -232,6 +256,7 @@ getCompetitonData <- function(comp.idx) {
             
             ll <- lapply(1:length(leaderboard),extractTeamDataWrapper,lb.html)
             
+            # consolidate all team data into a singel data frame
             df.team <- do.call(rbind,ll)
             
             # go back to competition inventory page
@@ -296,17 +321,22 @@ getCompetitonData <- function(comp.idx) {
 }
 
 
-
+###
 # create data frame for all completed competitions
+###
 # ll <- lapply(107:110,getCompetitonData)  #for debugging
 system.time(ll <- lapply(1:length(competitions),getCompetitonData))
 
-
+# consolidate all competiton data into a single data frame
 competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
+
+# consolidate all team member data into a single data frame
 team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
 
+# competition and team data for later processing
 save(competition.df,team.df,file="./competition_data.RDATA")
 
+# quit Webdriver session
 quit_session()
 
 
