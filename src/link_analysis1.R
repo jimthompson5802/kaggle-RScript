@@ -7,7 +7,7 @@ library(plyr)
 
 load("./competition_data.RData")
 
-df <- subset(team.df, team.place <= 3 ) # & competition.name == "Heritage Health Prize")
+df <- subset(team.df, team.place <= 10000)# & competition.name %in% c("Heritage Health Prize","Otto Group Product Classification Challenge"))
 #              competition.name %in% c("Heritage Health Prize",
 #                                      "Otto Group Product Classification Challenge"))
 
@@ -28,16 +28,28 @@ df1$player2 <- as.character(df1$player2)
 
 g <- graph.empty(directed=FALSE) 
 
-g <- g + vertices(df$member.url)
+g <- g + vertices(unique(df$member.url))
 
-V(g)$color <- ifelse(V(g)$name %in% winners$member.url,"red","green")
+
+V(g)$winner <- V(g)$name %in% winners$member.url
+V(g)$color <- ifelse(V(g)$winner,"red","green")
+V(g)$size <- ifelse(V(g)$winner,5,2)
 
 df.edges <- c(t(df1[,c("player1","player2")]))
 
 g <- g + edges(df.edges)
 
-plot(g,vertex.label=NA, vertex.size=2,
-     layout=layout.fruchterman.reingold)
+lyt <- layout_nicely(g)
+
+plot(g, 
+     vertex.size=2,
+     layout=lyt,
+     vertex.label=NA)
+
+g <- g - vertices(V(g)$name[!V(g)$winner])
 
 degree(g)[rev(order(degree(g)))]
+
+clq1 <- max_cliques(g,min=5)
+clq2 <- largest_cliques(g)
 
