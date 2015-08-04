@@ -8,6 +8,8 @@ library(ggmap)
 library(tm)
 library(plyr)
 
+PLAYER.URL.PREFIX <- "https://www.kaggle.com"
+
 # non-standard package - installed from github.com
 # library(devtools)
 # install_github(repo="Rwebdriver", username="crubba")
@@ -98,7 +100,7 @@ extractTeamData <- function(team) {
         team.type <- "anonymous-type"
         team.name <- "Anonymous"
         member.name <- "Not Given"
-        member.url <- "Not Given"
+        member.url <- NA
     }
     
     # for wining teams, extract out location and pro-rate medal weights
@@ -107,25 +109,29 @@ extractTeamData <- function(team) {
         
         # determine member location
         member.location <- sapply(member.url,function(url.frag){
-#             #retrieve member profile page
-#             post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
-#             # Sys.sleep(2)
-#             element_xpath_find('//*[@id="profile-bio"]/h2')
-#             
-#             #get member page data
-#             member.page <- htmlParse(page_source())
-#             
-#             #find user location
-#             user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
-#             
-#             if (nchar(user.location) > 0 ) {
-#                 geocoded.location <- geocode(user.location,output = "more")$country
+#             if (!is.na(member.url)) {
+#                 #retrieve member profile page
+#                 post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
+#                 # Sys.sleep(2)
+#                 element_xpath_find('//*[@id="profile-bio"]/h2')
+#                 
+#                 #get member page data
+#                 member.page <- htmlParse(page_source())
+#                 
+#                 #find user location
+#                 user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
+#                 
+#                 if (nchar(user.location) > 0 ) {
+#                     geocoded.location <- geocode(user.location,output = "more")$country
+#                 } else {
+#                     geocoded.location <- "unknown"
+#                 }
+#                 
+#                 page_back()
+#                 element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
 #             } else {
-#                 geocoded.location <- "unknown"
+#                 geocoded.location <- NA
 #             }
-#             
-#             page_back()
-#             element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
             geocoded.location <- NA
             return(geocoded.location)
         })
@@ -324,7 +330,7 @@ getCompetitonData <- function(comp.idx) {
 ###
 # create data frame for all completed competitions
 ###
-# ll <- lapply(107:110,getCompetitonData)  #for debugging
+# ll <- lapply(1:10,getCompetitonData)  #for debugging
 system.time(ll <- lapply(1:length(competitions),getCompetitonData))
 
 # consolidate all competiton data into a single data frame
