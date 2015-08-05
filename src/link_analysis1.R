@@ -58,6 +58,7 @@ V(g)$winner <- V(g)$name %in% winners$member.url
 V(g)$color <- ifelse(V(g)$winner,"red","green")  # distinguish winners and non-winners
 V(g)$size <- ifelse(V(g)$winner,5,2)  # to make visible in full plot
 
+# display revised graph
 plot(g, 
      # vertex.size=2,
      layout=lyt,
@@ -67,13 +68,36 @@ plot(g,
 g <- g - vertices(V(g)$name[!V(g)$winner])
 V(g)$size <- 2
 
+#display winner only graph
 lyt <- layout_nicely(g)
-
 plot(g, 
      layout=lyt,
      vertex.label=NA)
 
-g <- g - vertices(V(g)[degree(g)<2])
+#eliminate single only teams
+g <- g - vertices(V(g)[degree(g)==0])
+
+#display winner only graph
+lyt <- layout_nicely(g)
+plot(g, 
+     layout=lyt,
+     vertex.label=NA)
+
+
+# extract out each community subgraph
+cmnties <- decompose(g)
+
+#determine size of each community
+community.size <- sapply(cmnties,function(g){length(V(g))})
+summary(community.size)
+
+g2 <- cmnties[[which(community.size == max(community.size))]]
+
+lyt <- layout_nicely(g2)
+plot(g2,
+     layout=lyt,
+     vertex.label=NA)
+
 
 g.df <- as_long_data_frame(g)
 g.df <- subset(g.df,from_winner == FALSE & to_winner == TRUE)
