@@ -105,7 +105,7 @@ g.df <- subset(g.df,from_winner == FALSE & to_winner == TRUE)
 degree(g)[rev(order(degree(g)))]
 
 clq1 <- max_cliques(g,min=5)
-clq2 <- largest_cliques(g)
+clq2 <- largest_cliques(g2)
 
 count_components(g)
 
