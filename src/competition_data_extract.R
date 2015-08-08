@@ -294,11 +294,11 @@ system.time(ll <- lapply(1:length(competitions),getCompetitonData))
 
 # consolidate all competiton data into a single data frame
 competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
-comment(competition.df) <- paste0("created on",Sys.time())
+comment(competition.df) <- paste("created on",Sys.time())
 
 # consolidate all team member data into a single data frame
 team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
-comment(team.df) <- paste0("created on",Sys.time())
+comment(team.df) <- paste("created on",Sys.time())
 
 # competition and team data for later processing
 save(competition.df,team.df,file="./competition_data.RDATA")
