@@ -103,53 +103,12 @@ extractTeamData <- function(team) {
         member.url <- NA
     }
     
-    # for wining teams, extract out location and pro-rate medal weights
-    # currently code for extracting location is disabled
-    if (team.place <= 3) {
-        
-        # determine member location
-        member.location <- sapply(member.url,function(url.frag){
-#             if (!is.na(member.url)) {
-#                 #retrieve member profile page
-#                 post.url(url=paste0(PLAYER.URL.PREFIX,url.frag))
-#                 # Sys.sleep(2)
-#                 element_xpath_find('//*[@id="profile-bio"]/h2')
-#                 
-#                 #get member page data
-#                 member.page <- htmlParse(page_source())
-#                 
-#                 #find user location
-#                 user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
-#                 
-#                 if (nchar(user.location) > 0 ) {
-#                     geocoded.location <- geocode(user.location,output = "more")$country
-#                 } else {
-#                     geocoded.location <- "unknown"
-#                 }
-#                 
-#                 page_back()
-#                 element_xpath_find('//*[@id="leaderboard-table"]/tbody/tr[1]/th[1]')
-#             } else {
-#                 geocoded.location <- NA
-#             }
-            geocoded.location <- NA
-            return(geocoded.location)
-        })
-        
-        # pro-rate place medals
-        medal.weight <- 1/length(member.url)
-    } else {
-        member.location <- NA
-        medal.weight <- NA
-    }
-    
     # create data frame to hold team member data
-    data.frame(team.type=team.type,team.place=team.place,
+    data.frame(team.type=team.type,
+               team.place=team.place,
                team.name=team.name,
                member.name=member.name,
                member.url=member.url,
-               member.location=member.location,
-               medal.weight=medal.weight,
                stringsAsFactors=FALSE)
     
 }
@@ -335,9 +294,11 @@ system.time(ll <- lapply(1:length(competitions),getCompetitonData))
 
 # consolidate all competiton data into a single data frame
 competition.df <- do.call(rbind,lapply(ll,function(x){x$df.comp}))
+comment(competition.df) <- paste0("created on",Sys.time())
 
 # consolidate all team member data into a single data frame
 team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
+comment(team.df) <- paste0("created on",Sys.time())
 
 # competition and team data for later processing
 save(competition.df,team.df,file="./competition_data.RDATA")
