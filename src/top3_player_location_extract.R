@@ -80,6 +80,10 @@ cat("removed:",total.records - with.location.data,"out of",total.records,"\n")
 # determine medal count by contry
 medal.count.df <- ddply(top3.df,.(member.location,team.place),summarize,medals=sum(medal.weight))
 
-
-
+# create source text file that contains medal count data for the Rmarkdown report
+lines.to.write <- c(paste0("country=c(",paste(medal.count.df$member.location,collapse=","),")"),
+                    paste0("place=c(",paste(medal.count.df$team.place,collapse=","),")"),
+                    paste0("medal.count=c(",paste(medal.count.df$medals,collapse=","),")")
+                    )
+writeLines(lines.to.write,"./medal_count_data.txt")
 
