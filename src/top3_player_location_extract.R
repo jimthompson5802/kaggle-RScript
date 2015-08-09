@@ -68,8 +68,14 @@ names(top3.df)[names(top3.df)=="team.member.count.x"] <- "team.member.count"
 top3.df$medal.weight.y <- NULL
 top3.df$team.member.count.y <- NULL
 
+total.records <- nrow(top3.df)
+
 # eliminate missing or NA records
 top3.df <- subset(top3.df,!(is.na(top3.df$member.location) | top3.df$member.location == "unknown"))
+
+with.location.data <- nrow(top3.df)
+
+cat("removed:",total.records - with.location.data,"out of",total.records,"\n")
 
 # determine medal count by contry
 medal.count.df <- ddply(top3.df,.(member.location,team.place),summarize,medals=sum(medal.weight))
