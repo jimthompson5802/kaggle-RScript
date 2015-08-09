@@ -12,7 +12,7 @@ df <- subset(team.df, team.place <= 10000)# & competition.name %in% c("Heritage 
 #                                      "Otto Group Product Classification Challenge"))
 
 # extract out winner identifiers
-winners <- subset(df,team.place <= 3,member.url)
+winners <- subset(df,team.place <= 1,member.url)
 
 # function to transform raw team data into graph edges
 create_edges <- function(df) {
@@ -77,7 +77,7 @@ plot(g,
 #eliminate single only teams
 g <- g - vertices(V(g)[degree(g)==0])
 
-#display winner only graph
+#display winner teams only graph
 lyt <- layout_nicely(g)
 plot(g, 
      layout=lyt,
