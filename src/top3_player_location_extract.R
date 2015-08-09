@@ -47,18 +47,29 @@ getMemberLocation <- function(onerow) {
      #find user location
      user.location <- xmlValue(xpathApply(member.page,'//*[@id="profile2-bio-vitals"]/dd')[[1]])
      
-     if (nchar(user.location) > 0 ) {
+     if (nchar(user.location) > 0 && !is.na(user.location)) {
          onerow$member.location <- geocode(user.location,output = "more")$country
      } else {
          onerow$member.location <- "unknown"
      }
     
-    return(member)
+    return(onerow)
 }
 
-top3.df <- adply(top3.df[1:10,],1,getMemberLocation)
+# extract team member location and normalize using google map geocode API
+top3.df <- adply(top3.df,1,getMemberLocation)
+comment(top3.df) <- paste("created on",Sys.time())
+save(top3.df,file="./top3_team_members.RData")
 
+#clean up column names
 top3.df <- merge(top3.df,medal.df,by=c("competition.name","team.place"))
+names(top3.df)[names(top3.df)=="medal.weight.x"] <- "medal.weight"
+names(top3.df)[names(top3.df)=="team.member.count.x"] <- "team.member.count"
+top3.df$medal.weight.y <- NULL
+top3.df$team.member.count.y <- NULL
+
+# determine medal count by contry
+medal.count.df <- ddply(top3.df,.(member.location,team.place),summarize,medals=sum(medal.weight))
 
 
 
