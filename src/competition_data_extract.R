@@ -301,7 +301,7 @@ team.df <- do.call(rbind,lapply(ll,function(x){x$df.team}))
 comment(team.df) <- paste("created on",Sys.time())
 
 # competition and team data for later processing
-save(competition.df,team.df,file="./competition_data.RDATA")
+save(competition.df,team.df,file="./competition_data.RData")
 
 # quit Webdriver session
 quit_session()
