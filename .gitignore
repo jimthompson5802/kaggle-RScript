@@ -1,0 +1,9 @@
+.Rproj.user
+.Rhistory
+.RData
+data
+competition_data.RDATA
+competition.RDATA
+medal_count_data.txt
+top3_team_members.RData
+.DS_Store
