@@ -56,25 +56,9 @@ getMemberLocation <- function(onerow) {
     return(member)
 }
 
-top3.df <- adply(top3.df,1,getMemberLocation)
+top3.df <- adply(top3.df[1:10,],1,getMemberLocation)
 
 top3.df <- merge(top3.df,medal.df,by=c("competition.name","team.place"))
 
 
-# determine member location
-member.location <- sapply(member.url,function(url.frag){
-    #             if (!is.na(member.url)) {
 
-    #             } else {
-    #                 geocoded.location <- NA
-    #             }
-    geocoded.location <- NA
-    return(geocoded.location)
-})
-
-# pro-rate place medals
-medal.weight <- 1/length(member.url)
-} else {
-    member.location <- NA
-    medal.weight <- NA
-}
