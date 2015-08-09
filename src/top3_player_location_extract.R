@@ -1,3 +1,46 @@
+###
+#  Program to extract and normalize location data for the members of the
+#  top 3 teams 
+###
+
+# standard R packages
+library(XML)
+library(ggmap)
+library(tm)
+library(plyr)
+
+PLAYER.URL.PREFIX <- "https://www.kaggle.com"
+
+load("competition_data.RData")
+
+# extract medal winners, i.e., top 3 finishing teams for each competition
+top3.df <- subset(team.df,team.place <= 3,select=c(member.url,team.place,competition.name,team.name))
+
+# pro-rate medal weight for multi-player team
+top3.df <- ddply(top3.df,.(competition.name,team.name),summarize,
+                 medal.weight=1/length(member.url),
+                 team.member.count=length(member.url))
+
+
+
+# non-standard package - installed from github.com
+# library(devtools)
+# install_github(repo="Rwebdriver", username="crubba")
+# Rwebdriver requires non-R software from http://www.seleniumhq.org/projects/webdriver/
+library(Rwebdriver)  
+
+# start Selenium Webdriver server prior to running this R program
+# create session to Webdriver software
+start_session(root="http://127.0.0.1:4444/wd/hub/",browser="firefox")
+implicit_wait(5000)  # wait for 5 seconds to locate elements on web page
+
+
+getMemberLocation <- function(member) {
+    
+}
+
+
+
 # determine member location
 member.location <- sapply(member.url,function(url.frag){
     #             if (!is.na(member.url)) {
