@@ -17,7 +17,7 @@ load("competition_data.RData")
 top3.df <- subset(team.df,team.place <= 3,select=c(member.url,team.place,competition.name,team.name))
 
 # pro-rate medal weight for multi-player team
-top3.df <- ddply(top3.df,.(competition.name,team.name),summarize,
+medal.df <- ddply(top3.df,.(competition.name,team.place),summarize,
                  medal.weight=1/length(member.url),
                  team.member.count=length(member.url))
 
@@ -37,8 +37,14 @@ implicit_wait(5000)  # wait for 5 seconds to locate elements on web page
 
 getMemberLocation <- function(member) {
     
+    member$location <- NA
+    
+    return(member)
 }
 
+top3.df <- adply(top3.df,1,getMemberLocation)
+
+top3.df <- merge(top3.df,medal.df,by=c("competition.name","team.place"))
 
 
 # determine member location
