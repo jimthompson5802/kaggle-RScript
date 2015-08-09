@@ -28,6 +28,9 @@ each receive a medal count of 0.5 each.
 library(ggmap)
 library(plyr)
 library(tidyr)
+library(maps)
+library(ggplot2)
+library(ggsubplot)
 
 # this creates the medal count data by country
 raw.medal.df <- read.csv(textConnection('
@@ -120,7 +123,10 @@ raw.medal.df <- read.csv(textConnection('
     "united states",2,40.8
     "united states",3,30.3333333333333'
 ))
+#capitalize first letter of each country name
+raw.medal.df$country <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", raw.medal.df$country, perl=TRUE)
 
+# create medal designation from team.place
 raw.medal.df <- adply(raw.medal.df,1,mutate,medal.type=factor(switch(place,"Gold","Silver","Bronze"),
                                                               levels=c("Gold","Silver","Bronze")))
 ```
@@ -142,11 +148,61 @@ print(g)
     
 ```
 
+
+```{r,echo=FALSE}
+# extract top 5 countries by total medal count
+top5 <- total.medal.counts[rev(order(total.medal.counts$medal.count)),]
+top5 <- top5[1:5,]
+
+# determine plot locations
+plot.loc <- adply(unique(top5$country),1,function(country){
+    loc <- geocode(country,output = "more")
+    return(data.frame(lat=loc$lat,lon=loc$lon))
+})
+
+top5 <- cbind(top5,plot.loc[,c("lat","lon")])
+
+top5.medals <- subset(raw.medal.df,country %in% top5$country)
+
+#Get world map info
+world_map <- map_data("world")
+
+
+
+#Create a base plot
+p <- ggplot()  + geom_polygon(data=world_map,aes(x=long, y=lat,group=group), col = "blue4", fill = "lightgray") + theme_bw()
+
+p <- p +
+    geom_text(aes(x=lon,y=lat,label=country),data=top5)
+
+
+print(p)
+# # Calculate the mean longitude and latitude per region (places where subplots are plotted),
+# cntr <- ddply(world_map,.(region),summarize,long=mean(long),lat=mean(lat))
+# 
+# # example data
+#  myd <- data.frame (region = rep (c("USA","China","USSR","Brazil", "Australia","India", "Canada"),5),
+#                     categ = rep (c("A", "B", "C", "D", "E"),7), frequency = round (rnorm (35, 8000, 4000), 0))
+#                     
+# 
+# subsetcntr  <- subset(cntr, region %in% c("USA","China","USSR","Brazil", "Australia","India", "Canada"))
+# 
+# simdat <- merge(subsetcntr, myd)
+# colnames(simdat) <- c( "region","long","lat", "categ", "myvar" )
+# 
+# 
+#  myplot  <- p+geom_subplot2d(aes(long, lat, subplot = geom_bar(aes(x = categ, y = myvar, fill = categ, width=1), position = "identity")), ref = NULL, data = simdat)
+
+# print(myplot)
+```
+
+
 ### Appendix - Medal counts for all countries.
 ```{r,echo=FALSE}
 # convert to wide format for printing
 df <- subset(raw.medal.df,select=c(country,medal.type,medals))
 country.list <- spread(df,medal.type,medals,fill=0)
+names(country.list)[1] <- "Country"
 options(digits=2)
 country.list
 ```
