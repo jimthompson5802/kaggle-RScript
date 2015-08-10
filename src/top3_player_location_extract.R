@@ -83,3 +83,7 @@ medal.count.df <- ddply(top3.df,.(member.location,team.place),summarize,medals=s
 # create source text file that contains medal count data for the Rmarkdown report
 write.csv(medal.count.df,file="./medal_count_data.txt",row.names = FALSE)
 
+# create source text containing list of competitions covered for the analysis
+comp.with.lb <- unique(top3.df[,"competition.name"])
+write.csv(data.frame(competition.name=comp.with.lb),file="./competition_with_team.txt",row.names=FALSE)
+
