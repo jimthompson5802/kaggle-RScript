@@ -5,17 +5,26 @@ date: "August 9, 2015"
 output: html_document
 ---
 
-With the Summer Olympics just around the corner, this report looks at the medal count
-for Kaggle competitions.  
+In the spirit of the upcoming Summer Olympics, this report looks at country medal count
+for Kaggle competitions.
 
 Data for this analysis comes from the Kaggle Leaderboard as of August 8, 2015.  The
 data was extracted by web-scraping Kaggle's leaderboard web pages.  Source code for 
 web-scraping and data pre-processing can be found at this [github repository](https://github.com/jimthompson5802/kaggle-RScript).
 
-As of August 8th, there were 172 completed competitions. 
+As of August 8th, there were 172 completed competitions. From this set, this analysis
+focused on those competitions that awarded cash prize.  In other words, competitions that
+listed as Jobs, Knowledge, Kudos, Private and Swag were excluded.  This resulted 
+in 136 candidate competitions.  Of the candidate competitions, 14 did not contain
+Leaderboard information and were excluded from the analysis.  This resulted in 122 
+competitions for analysis (see Appedix for list).
 
-Country designation was determined by using Google's **geocode()** function from
-the **ggmap** package.
+This set of 122 competitions accounted for 708 user records who were on teams that finished in the 
+top 3 positions.  243 users did not specifcy a location in their profile.  These were
+eliminated from the analysis.  For the remaining 465 user records, which contained profile
+location data, the users' country were determined using Google's **geocode()** function from
+the **ggmap** package. (Note: if a specific user participated in more than one competition,
+that user will appear multiple times in the 465 records.)
 
 For the situation where a team places in a top 3 position and its members come 
 from different countries, the medal count for the countries involved 
@@ -135,24 +144,11 @@ raw.medal.df <- adply(raw.medal.df,1,mutate,medal.type=factor(switch(place,"Gold
 Following chart shows the top ten countries by total medal count. The Appendix shows
 medal counts for all countries.
 
-```{r,echo=FALSE}
-total.medal.counts <- ddply(raw.medal.df,.(country),summarize,medal.count=sum(medals))
-total.medal.counts <- total.medal.counts[rev(order(total.medal.counts$medal.count)),]
-g <- ggplot() +
-    geom_bar(aes(x=reorder(country,medal.count),y=medal.count),data=total.medal.counts[1:10,],stat="identity") +
-    coord_flip() +
-    xlab("Country") +
-    ylab("Total Medal Count") +
-    ggtitle("Top Ten Countries in Total Medals")
-print(g)
-    
-```
-
 
 ```{r,echo=FALSE}
 # extract top 10 countries by total medal count
-# total.medal.counts <- ddply(raw.medal.df,.(country),summarize,medal.count=sum(medals))
-# total.medal.counts <- total.medal.counts[rev(order(total.medal.counts$medal.count)),]
+total.medal.counts <- ddply(raw.medal.df,.(country),summarize,medal.count=sum(medals))
+total.medal.counts <- total.medal.counts[rev(order(total.medal.counts$medal.count)),]
 top10 <- total.medal.counts[rev(order(total.medal.counts$medal.count)),]
 top10 <- top10[1:10,]
 
@@ -164,6 +160,7 @@ p <- ggplot() +
     geom_bar(aes(x=reorder(country,medal.count),y=medals,fill=medal.type),data=medal.counts,stat="identity") +
     scale_fill_manual(values=c("gold","darkgray","darkgoldenrod1")) +
     coord_flip() +
+    labs(fill="Medal") +
     xlab("Country") +
     ylab("Medal Count") +
     ggtitle("Top Ten Countries in Total Medals")
@@ -171,7 +168,9 @@ print(p)
 ```
 
 
-### Appendix - Medal counts for all countries.
+### Appendix
+
+#### **Medal Count for all Countries**
 ```{r,echo=FALSE}
 # convert to wide format for printing
 df <- subset(raw.medal.df,select=c(country,medal.type,medals))
@@ -181,5 +180,138 @@ options(digits=2)
 country.list
 ```
 
+
+#### **Competitions included in the Medal Count Analysis**
+```{r, echo=FALSE}
+
+comp.list <- read.csv(textConnection('
+    "competition.name"
+"Accelerometer Biometric Competition"
+"Acquire Valued Shoppers Challenge"
+"Africa Soil Property Prediction Challenge "
+"Algorithmic Trading Challenge"
+"Allstate Claim Prediction Challenge"
+"Allstate Purchase Prediction Challenge"
+"Amazon.com - Employee Access Challenge"
+"American Epilepsy Society Seizure Prediction Challenge"
+"AMS 2013-2014 Solar Energy Prediction Contest"
+"Avito Context Ad Clicks"
+"BCI Challenge @ NER 2015"
+"Belkin Energy Disaggregation Competition"
+"Benchmark Bond Trade Price Challenge"
+"Blue Book for Bulldozers"
+"Cause-effect pairs"
+"CHALEARN Gesture Challenge"
+"CHALEARN Gesture Challenge 2"
+"Challenges in Representation Learning: Facial Expression Recognition Challenge"
+"Challenges in Representation Learning: The Black Box Learning Challenge"
+"Chess ratings - Elo versus the Rest of the World"
+"Click-Through Rate Prediction"
+"CONNECTOMICS"
+"CPROD1: Consumer PRODucts contest #1"
+"Data Mining Hackathon on (20 mb) Best Buy mobile web site - ACM SF Bay Area Chapter"
+"Data Mining Hackathon on BIG DATA (7GB) Best Buy mobile web site"
+"DecMeg2014 - Decoding the Human Brain"
+"Deloitte/FIDE Chess Rating Challenge"
+"Detecting Insults in Social Commentary"
+"Diabetic Retinopathy Detection"
+"Display Advertising Challenge"
+"Don\'t Get Kicked!"
+"Don\'t Overfit!"
+"Driver Telematics Analysis"
+"dunnhumby & hack/reduce Product Launch Challenge"
+"dunnhumby\'s Shopper Challenge"
+"ECML/PKDD 15: Taxi Trajectory Prediction (I)"
+"ECML/PKDD 15: Taxi Trip Time Prediction (II)"
+"EMC Data Science Global Hackathon (Air Quality Prediction)"
+"EMC Israel Data Science Challenge"
+"EMI Music Data Science Hackathon - July 21st - 24 hours"
+"Event Recommendation Engine Challenge"
+"Flight Quest 2: Flight Optimization, Final Phase"
+"Flight Quest 2: Flight Optimization, Main Phase"
+"Flight Quest 2: Flight Optimization, Milestone Phase"
+"Galaxy Zoo - The Galaxy Challenge"
+"GE Flight Quest"
+"GigaOM WordPress Challenge: Splunk Innovation Prospect"
+"Give Me Some Credit"
+"Global Energy Forecasting Competition 2012 - Load Forecasting"
+"Global Energy Forecasting Competition 2012 - Wind Forecasting"
+"Greek Media Monitoring Multilabel Classification (WISE 2014)"
+"Helping Santa\'s Helpers"
+"Heritage Health Prize"
+"Higgs Boson Machine Learning Challenge"
+"How Much Did It Rain?"
+"ICDAR 2011 - Arabic Writer Identification"
+"ICDAR2013 - Gender Prediction from Handwriting"
+"ICDAR2013 - Handwriting Stroke Recovery from Offline Data"
+"ICFHR 2012 - Arabic Writer Identification"
+"IJCNN Social Network Challenge "
+"Influencers in Social Networks"
+"INFORMS Data Mining Contest 2010"
+"Job Recommendation Challenge"
+"Job Salary Prediction"
+"KDD Cup 2012, Track 1"
+"KDD Cup 2012, Track 2"
+"KDD Cup 2013 - Author Disambiguation Challenge (Track 2)"
+"KDD Cup 2013 - Author-Paper Identification Challenge (Track 1)"
+"KDD Cup 2014 - Predicting Excitement at DonorsChoose.org"
+"Liberty Mutual Group - Fire Peril Loss Cost"
+"Loan Default Prediction - Imperial College London"
+"Mapping Dark Matter"
+"March Machine Learning Mania"
+"March Machine Learning Mania 2015"
+"Merck Molecular Activity Challenge"
+"Microsoft Malware Classification Challenge (BIG 2015)"
+"MLSP 2013 Bird Classification Challenge"
+"Multi-modal Gesture Recognition"
+"National Data Science Bowl"
+"Observing Dark Worlds"
+"Online Product Sales"
+"Otto Group Product Classification Challenge"
+"Packing Santa\'s Sleigh"
+"PAKDD 2014 - ASUS Malfunctional Components Prediction"
+"Partly Sunny with a Chance of Hashtags"
+"Personality Prediction Based on Twitter Stream"
+"Personalize Expedia Hotel Searches - ICDM 2013"
+"Personalized Web Search Challenge"
+"Photo Quality Prediction"
+"Practice Fusion Diabetes Classification"
+"Predict Closed Questions on Stack Overflow"
+"Predict Grant Applications"
+"Predict HIV Progression"
+"Predicting a Biological Response"
+"Psychopathy Prediction Based on Twitter Usage"
+"R Package Recommendation Engine"
+"Raising Money to Fund an Organizational Mission"
+"RecSys2013: Yelp Business Rating Prediction"
+"RTA Freeway Travel Time Prediction"
+"Search Results Relevance"
+"See Click Predict Fix"
+"See Click Predict Fix - Hackathon"
+"Semi-Supervised Feature Learning"
+"Stay Alert! The Ford Challenge"
+"StumbleUpon Evergreen Classification Challenge"
+"The Big Data Combine Engineered by BattleFin"
+"The Hewlett Foundation: Automated Essay Scoring"
+"The Hewlett Foundation: Short Answer Scoring"
+"The Hunt for Prohibited Content"
+"The ICML 2013 Bird Challenge"
+"The ICML 2013 Whale Challenge - Right Whale Redux"
+"The Marinexplore and Cornell University Whale Detection Challenge"
+"The Random Number Grand Challenge"
+"Tourism Forecasting Part One"
+"Tourism Forecasting Part Two"
+"Tradeshift Text Classification"
+"Traveling Santa Problem"
+"U.S. Census Return Rate Challenge"
+"UPenn and Mayo Clinic\'s Seizure Detection Challenge"
+"West Nile Virus Prediction"
+"What Do You Know?"
+"Wikipedia\'s Participation Challenge"'
+))
+
+comp.list
+
+```
 
 
