@@ -7,12 +7,12 @@ library(plyr)
 
 load("./competition_data.RData")
 
-df <- subset(team.df, team.place <= 10000)# & competition.name %in% c("Heritage Health Prize","Otto Group Product Classification Challenge"))
+df <- subset(team.df) #, competition.name %in% c("Heritage Health Prize","Otto Group Product Classification Challenge"))
 #              competition.name %in% c("Heritage Health Prize",
 #                                      "Otto Group Product Classification Challenge"))
 
 # extract out winner identifiers
-winners <- subset(df,team.place <= 1,member.url)
+winners <- subset(df,team.place <= 3,member.url)
 
 # function to transform raw team data into graph edges
 create_edges <- function(df) {
