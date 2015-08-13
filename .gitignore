@@ -7,3 +7,5 @@ competition.RDATA
 medal_count_data.txt
 top3_team_members.RData
 .DS_Store
+winners.csv
+competition_with_team.txt
