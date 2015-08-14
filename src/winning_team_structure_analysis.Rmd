@@ -754,7 +754,7 @@ createGraphData <- function (raw.team.df) {
                        top3.count=length(team.place))
   vertices.df <- adply(vertices.df,1,mutate,
                        color=switch(top.place,"gold","darkgray","darkgoldenrod1"),
-                       size=switch(min(top3.count,3),3,5,7))
+                       size=switch(min(top3.count,3),2,4,6))
 
   return(list(vertices=vertices.df, edges=edges.df))
 }
@@ -774,5 +774,27 @@ plot(g,
      layout=lyt,
      vertex.label=NA)
 ```
+
+
+```{r,echo=FALSE,fig.height=6,fig.width=6}
+
+V(g)$color[V(g)$name=="/owenzhang1"] <- "red"
+
+plot(g,
+     layout=lyt,
+     vertex.label=NA)
+
+g2 <- graph.empty(directed=FALSE)
+
+g2 <- g2 + V(g)[V(g)$name=="/owenzhang1"]
+
+lyt2 <- layout_nicely(g2)
+
+plot(g2,
+     layout=lyt2)
+
+```
+
+
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
