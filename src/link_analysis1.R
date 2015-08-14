@@ -12,7 +12,7 @@ df <- subset(team.df) #, competition.name %in% c("Heritage Health Prize","Otto G
 #                                      "Otto Group Product Classification Challenge"))
 
 # extract out winner identifiers
-winners <- subset(df,team.place <= 3,member.url)
+df <- subset(df,team.place <= 3)
 
 # function to transform raw team data into graph edges
 create_edges <- function(df) {
