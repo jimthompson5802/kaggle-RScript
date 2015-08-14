@@ -753,25 +753,26 @@ createGraphData <- function (raw.team.df) {
                        top.place=min(team.place),
                        top3.count=length(team.place))
   vertices.df <- adply(vertices.df,1,mutate,
-                       vertex.color=switch(top.place,"Gold","Silver","Bronze"),
-                       vertex.size=switch(min(top3.count,3),3,5,7))
+                       color=switch(top.place,"gold","darkgray","darkgoldenrod1"),
+                       size=switch(min(top3.count,3),3,5,7))
 
   return(list(vertices=vertices.df, edges=edges.df))
 }
 
 
 # create a graph to perform initial data scrubbing
-df <- subset(raw.team.df,competition.name=="Heritage Health Price")
+df <- subset(raw.team.df) #,competition.name=="Heritage Health Prize")
 graph <- createGraphData(df)
 
 g <- graph_from_data_frame(graph[["edges"]],directed=FALSE,vertices=graph[["vertices"]])
 
-# lyt <- layout_nicely(g)
-# 
-# plot(g, 
-#      vertex.size=3,
-#      layout=lyt,
-#      vertex.label=NA)
+lyt <- layout_nicely(g)
+
+plot(g, 
+     # vertex.size=member.size,
+     # vertex.color=V(g)$member.color,
+     layout=lyt,
+     vertex.label=NA)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
