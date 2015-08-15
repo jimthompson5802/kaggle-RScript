@@ -778,20 +778,22 @@ plot(g,
 
 ```{r,echo=FALSE,fig.height=6,fig.width=6}
 
-V(g)$color[V(g)$name=="/owenzhang1"] <- "red"
+V(g)["/owenzhang1"]$color <- "red"
 
 plot(g,
      layout=lyt,
      vertex.label=NA)
 
-g2 <- graph.empty(directed=FALSE)
+leader.neighbors <- incident_edges(g,V(g)["/owenzhang1"])
 
-g2 <- g2 + V(g)[V(g)$name=="/owenzhang1"]
+g2 <- subgraph.edges(g,leader.neighbors[[1]])
 
-lyt2 <- layout_nicely(g2)
+plot(g2)
 
-plot(g2,
-     layout=lyt2)
+e1 <- incident_edges(g,V(g)["/xavierconort"])
+
+g3 <- subgraph.edges(g,e1[[1]])
+plot(g3)
 
 ```
 
