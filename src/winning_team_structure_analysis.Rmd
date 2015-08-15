@@ -781,11 +781,19 @@ plot(g,
 
 
 ```{r,echo=FALSE,fig.height=6,fig.width=6}
-top.players <- c("/owenzhang1","/titericz","/kazanova","/stasg7","/abhishek")
+top.players <- read.csv(textConnection('
+"member.url","rank"
+"/owenzhang1",1
+"/titericz",2
+"/kazanova",3
+"/stasg7",4
+"/abhishek",5
+'
+),stringsAsFactors=FALSE)
 
 V(g)$shape <- "circle"
 V(g)$frame.color <- "black"
-for (member in top.players) {
+for (member in top.players$member.url) {
     V(g)[member]$frame.color <- "red"
     V(g)[member]$label <- V(g)[member]$member.name
     V(g)[member]$label.font <- 2
@@ -794,11 +802,14 @@ for (member in top.players) {
 
 plot(g,
      layout=lyt)
+```
 
+
+```{r,echo=FALSE,fig.height=6,fig.width=6}
 
 # function to focus on the neighbors of the top players
-plotTopPlayerNeighbors <- function(a.top.player,g) {
-  e1 <- incident_edges(g,V(g)[a.top.player])
+plotTopPlayerNeighbors <- function(one.row,g) {
+  e1 <- incident_edges(g,V(g)[one.row$member.url])
   g.top.player.neighbors <- subgraph.edges(g,e1[[1]])
   V(g.top.player.neighbors)$label <- V(g.top.player.neighbors)$member.name
   V(g.top.player.neighbors)$size <- V(g.top.player.neighbors)$size * 4
@@ -806,7 +817,8 @@ plotTopPlayerNeighbors <- function(a.top.player,g) {
       E(g.top.player.neighbors)[i]$width <- switch(min(E(g.top.player.neighbors)[i]$team.count,3),1,3,5)
   }
   plot(g.top.player.neighbors,
-       main=paste0("Neighbors of ",V(g.top.player.neighbors)[a.top.player]$member.name))
+       main=paste0(V(g.top.player.neighbors)[one.row$member.url]$member.name,
+                    "\nRank #",one.row$rank))
 }
 
 a_ply(top.players,1,plotTopPlayerNeighbors,g)
