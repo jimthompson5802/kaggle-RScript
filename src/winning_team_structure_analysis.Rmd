@@ -801,7 +801,7 @@ plotTopPlayerNeighbors <- function(a.top.player,g) {
   e1 <- incident_edges(g,V(g)[a.top.player])
   g.top.player.neighbors <- subgraph.edges(g,e1[[1]])
   V(g.top.player.neighbors)$label <- V(g.top.player.neighbors)$member.name
-  V(g.top.player.neighbors)$size <- V(g.top.player.neighbors)$size + 5
+  V(g.top.player.neighbors)$size <- V(g.top.player.neighbors)$size * 4
   for(i in 1:length(E(g.top.player.neighbors))) {
       E(g.top.player.neighbors)[i]$width <- switch(min(E(g.top.player.neighbors)[i]$team.count,3),1,3,5)
   }
@@ -821,7 +821,16 @@ cmnties <- decompose(g)
 
 idx <- sapply(cmnties,function(c){"/owenzhang1" %in% V(c)$name})
 
-plot(cmnties[idx][[1]])
+g3 <- cmnties[idx][[1]]
+
+idx <- is.na(V(g3)$label)
+
+V(g3)[idx]$label <- V(g3)[idx]$member.name
+V(g3)[idx]$label.cex <- 0.75
+V(g3)$size <- V(g3)$size*1.5
+
+
+plot(g3)
 
 ```
 
