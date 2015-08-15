@@ -730,6 +730,8 @@ You can also embed plots, for example:
 library(igraph)
 library(plyr)
 
+orig.par <- par()
+
 # creates graph oriented data
 createGraphData <- function (raw.team.df) {
   # function to transform raw team data into graph edges
@@ -776,7 +778,8 @@ set.seed(123)
 lyt <- layout_nicely(g)
 
 plot(g, 
-     layout=lyt)
+     layout=lyt,
+     main="Player Relationships on Winning Teams")
 ```
 
 
@@ -801,7 +804,8 @@ for (member in top.players$member.url) {
 
 
 plot(g,
-     layout=lyt)
+     layout=lyt,
+     main="Top 5 Players's Relationships")
 ```
 
 
