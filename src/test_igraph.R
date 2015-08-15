@@ -28,6 +28,12 @@ g <- g + edges(c(t(my.edges)))
 
 plot(g)
 
+
+e1 <- incident_edges(g,V(g)["e"])
+
+g2 <- subgraph.edges(g,e1$e)
+
+
 # consolidate multiple edges and determine number of times an edge appeared in the graph
 g.edges.df <- as_long_data_frame(g)
 g.edges.df[,3] <- as.character(g.edges.df[,3])
