@@ -12,5 +12,7 @@ Source code and visualizations for the competition.
     to determine location of team members on teams placing in the top 3 positions. 
     Run this script second.
     + **kaggle_leaderboard_medal_count.Rmd** creates report on medal count by country.
+    + **winning_team_structure_analysis.Rmd** provides visualization and analysis of Kaggle
+    teams placing in the top 3 positions using network analytic techniques.
 
 
