@@ -7,6 +7,7 @@ output: html_document
 ```{r,echo=FALSE}
 # this creates team data from extract of web scraping Kaggle Leaderboard pages
 # Web scraping code and data prep can be found at https://github.com/jimthompson5802/kaggle-RScript
+# datq only covers teams placing in the top 3 positions.
 raw.team.df <- read.csv(textConnection('
 "competition.name","team.type","team.place","team.name","member.name","member.url"
 "Heritage Health Prize","team-link team-player",1,"POWERDOT","David Vogel","/users/1941/david-vogel"
@@ -725,6 +726,7 @@ raw.team.df <- read.csv(textConnection('
 
 library(igraph)
 library(plyr)
+library(ggplot2)
 
 # save original graphic parameters
 orig.par <- par()
@@ -758,23 +760,33 @@ createGraphData <- function (raw.team.df) {
                        top3.count=sum(top3.count))
   vertices.df <- adply(vertices.df,1,mutate,
                        color=switch(top.place,"gold","darkgray","darkgoldenrod1"),
-                       size=switch(min(top3.count,3),2,5,8))
+                       size=switch(min(top3.count,3),3,7,9))
 
   return(list(vertices=vertices.df, edges=edges.df))
 }
 ```
 
 Building on the data collected for the [Kaggle Leaderboard Medal Count By Country](https://www.kaggle.com/jimthompson/introducing-kaggle-scripts/kaggle-competition-medal-count-analysis)
-we examine the relationships of Kaggle players on winning teams, teams placing in the top 3 places, using the **igraph** package.
+we examine the relationships of Kaggle players on winning teams--teams placing in the top 3 places--using the **igraph** package.  The list of Kaggle competitions covered by
+this analysis is shown in the Appendix.
 
 Team structures are depicted using a graph model.  In this model, Kaggle
-players are reprsented as vertices of a graph.  An edge exists between two vertices if
+players are represented as vertices of a graph.  An edge exists between two vertices if
 the players represented by those vertices competed on the same team in a Kaggle 
 competition.  We illustrate this concept with the following example.
 
+For the Heritage Health Prize, which ended in April 2013, the top 3 teams are shown
+in the following table.
 
+Place|Team Name|Team Members
+-----|---------|-------------
+1|POWERDOT|David Vogel, Sali Mali, Randy, Edward, Willem Mestrom, infty, random modeler
+2|EXL Analytics|Sassoon Kosian, DanB, B Yang, Tim Salimans
+3|J.A.Guerrero|J.A. Guerrero
 
-```{r,echo=FALSE,fig.width=6,fig.height=6}
+This is the graph representation of the above table.  Vertex color indicates place of the player's team.
+
+```{r,echo=FALSE,fig.width=8,fig.height=7}
 df <- subset(raw.team.df,competition.name=="Heritage Health Prize")
 graph <- createGraphData(df)
 
@@ -782,11 +794,12 @@ g <- graph_from_data_frame(graph[["edges"]],directed=FALSE,vertices=graph[["vert
 V(g)$label <- V(g)$member.name
 V(g)$size <- 25
 
+set.seed(13)
 lyt <- layout_nicely(g)
 plot(g,
      layout=lyt,
      main="Heritage Health Prize")
-legend(-0.9,1.4,
+legend(-0.6,-1.2,
        c("Gold","Silver","Bronze"),
        fill=c("gold","darkgray","darkgoldenrod1"),
        cex=1.0,
@@ -794,11 +807,18 @@ legend(-0.9,1.4,
        horiz=TRUE)
 ```
 
+When considering all `r length(unique(raw.team.df$competition.name))` competitions
+we have the following graph representation.  Because a Kaggle player may have competed 
+in more than one competition on different teams, we use the color and size of the vertex to 
+convey additional information.  Vertex color indicates the highest position a 
+player's team placed and size indicates the number of times the player's teams
+placed in the top 3.  
 
 
-```{r,echo=FALSE,Efig.height=8,fig.width=7}
-# create a graph to perform initial data scrubbing
-df <- subset(raw.team.df) #,competition.name=="Heritage Health Prize")
+
+```{r,echo=FALSE,fig.height=7,fig.width=7}
+# load up all competition data
+df <- raw.team.df
 graph <- createGraphData(df)
 
 g <- graph_from_data_frame(graph[["edges"]],directed=FALSE,vertices=graph[["vertices"]])
@@ -810,13 +830,13 @@ lyt <- layout_nicely(g)
 plot(g, 
      layout=lyt,
      main="Player Relationships on Winning Teams")
-legend(-0.5,1.3,
+legend(-0.5,-1.1,
        c("Gold","Silver","Bronze"),
        fill=c("gold","darkgray","darkgoldenrod1"),
        cex=0.75,
        bty="n",
        horiz=TRUE)
-legend(-0.5,1.2,
+legend(-0.5,-1.2,
        c("1 time", "2 times", " 3 or more"),
        cex=0.75,
        pch=rep(1,3),
@@ -825,8 +845,28 @@ legend(-0.5,1.2,
        horiz=TRUE)
 ```
 
+From this graph depiction we can calculate several measaures.  First the number of 
+vertices in the graph, `r length(V(g))`, indcate the number Kaggle
+players that participated on teams that placed in the top 3.  For each player we
+can determine the number of other players he or she teamed up with by counting the
+number of edges that terminate at the vertex representing the player.  This number is 
+called the vertex degree.  By counting the number of vertices with degree zero, we find 
+there are `r sum(degree(g,V(g))== 0)` players out of the `r length(V(g))` that
+did not participate on a team.  This represents 
+`r round(100*sum(degree(g,V(g))== 0)/length(V(g)),0)`% of the players.  The histogram
+shows the distribution of degree values.
 
-```{r,echo=FALSE,fig.height=7,fig.width=7}
+```{r,echo=FALSE,fig.width=6,fig.height=4}
+qplot(degree(g,V(g)),geom="histogram",binwidth=1) +
+    xlab("Vertex Degree") +
+    ylab("Count") +
+    ggtitle("Vertex Degree Distribution")
+```
+
+We now turn our attention to look at certain relationships.  As of August 13th, 
+the top 10 Kagglers are 
+
+```{r,echo=FALSE}
 top.players <- read.csv(textConnection('
 "member.url","rank"
 "/owenzhang1",1
@@ -842,6 +882,20 @@ top.players <- read.csv(textConnection('
 '
 ),stringsAsFactors=FALSE)
 
+# get top 10 player names from graph data
+top.players <- adply(top.players,1,mutate,
+                     member.name=V(g)[member.url]$member.name)
+
+print(top.players[c("rank","member.name")],row.names=FALSE)
+
+```
+
+We now identify the top 10 Kagglers on the graph. From this we see that 7 out of the
+10 top Kagglers participated on one or more teams and 3 were lone competitors.
+
+```{r,echo=FALSE,fig.height=7,fig.width=7}
+
+# identify the top 10 players on the graph
 V(g)$shape <- "circle"
 V(g)$frame.color <- "black"
 for (member in top.players$member.url) {
@@ -855,6 +909,9 @@ plot(g,
      layout=lyt,
      main="Top Ten Players")
 ```
+
+For the ten Kagglers, we now show who these players interacted with on one or more
+teams.
 
 
 ```{r,echo=FALSE,warning=FALSE,fig.height=15,fig.width=7}
