@@ -1,7 +1,7 @@
 ---
 title: "Visualizing Team Structures of Winning Kaggle Teams"
 author: "Jim Thompson"
-date: "August 13, 2015"
+date: "August 15, 2015"
 output: html_document
 ---
 ```{r,echo=FALSE}
@@ -767,8 +767,12 @@ createGraphData <- function (raw.team.df) {
 ```
 
 Building on the data collected for the [Kaggle Leaderboard Medal Count By Country](https://www.kaggle.com/jimthompson/introducing-kaggle-scripts/kaggle-competition-medal-count-analysis)
-we examine the relationships of Kaggle players on winning teams--teams placing in the top 3 places--using the **igraph** package.  The list of Kaggle competitions covered by
-this analysis is shown in the Appendix.
+we examine the relationships of Kaggle players on winning teams, i.e.,placing in the top 3, using the **igraph** package.  The Kaggle competitions covered by
+this analysis are shown in the Appendix.
+
+Data for this analysis comes from the Kaggle Leaderboard as of August 8, 2015.  The
+data was extracted by web-scraping Kaggle's leaderboard web pages.  Source code for 
+web-scraping and data pre-processing can be found at this [github repository](https://github.com/jimthompson5802/kaggle-RScript).
 
 Team structures are depicted using a graph model.  In this model, Kaggle
 players are represented as vertices of a graph.  An edge exists between two vertices if
@@ -814,8 +818,6 @@ convey additional information.  Vertex color indicates the highest position a
 player's team placed and size indicates the number of times the player's teams
 placed in the top 3.  
 
-
-
 ```{r,echo=FALSE,fig.height=7,fig.width=7}
 # load up all competition data
 df <- raw.team.df
@@ -845,8 +847,8 @@ legend(-0.5,-1.2,
        horiz=TRUE)
 ```
 
-From this graph depiction we can calculate several measaures.  First the number of 
-vertices in the graph, `r length(V(g))`, indcate the number Kaggle
+From this graph depiction we can calculate several measures.  First the number of 
+vertices in the graph, `r length(V(g))`, indicate the number Kaggle
 players that participated on teams that placed in the top 3.  For each player we
 can determine the number of other players he or she teamed up with by counting the
 number of edges that terminate at the vertex representing the player.  This number is 
@@ -864,7 +866,7 @@ qplot(degree(g,V(g)),geom="histogram",binwidth=1) +
 ```
 
 We now turn our attention to look at certain relationships.  As of August 13th, 
-the top 10 Kagglers are 
+the Top 10 Kagglers are 
 
 ```{r,echo=FALSE}
 top.players <- read.csv(textConnection('
@@ -890,7 +892,8 @@ print(top.players[c("rank","member.name")],row.names=FALSE)
 
 ```
 
-We now identify the top 10 Kagglers on the graph. From this we see that 7 out of the
+The Top 10 Kagglers on the graph are identified by name and a red line outlining the
+player's vertex. From this we see that 7 out of the
 10 top Kagglers participated on one or more teams and 3 were lone competitors.
 
 ```{r,echo=FALSE,fig.height=7,fig.width=7}
@@ -908,11 +911,26 @@ for (member in top.players$member.url) {
 plot(g,
      layout=lyt,
      main="Top Ten Players")
+legend(-0.5,-1.1,
+       c("Gold","Silver","Bronze"),
+       fill=c("gold","darkgray","darkgoldenrod1"),
+       cex=0.75,
+       bty="n",
+       horiz=TRUE)
+legend(-0.5,-1.2,
+       c("1 time", "2 times", " 3 or more"),
+       cex=0.75,
+       pch=rep(1,3),
+       pt.cex=c(1,1.5,2),
+       bty="n",
+       horiz=TRUE)
 ```
 
-For the ten Kagglers, we now show who these players interacted with on one or more
-teams.
-
+For the Top 10 Kagglers, we now show the players that were on the same teams.  In the
+graphs below, the thickness of the line joining two vertices indicate how often
+the players participated on a team.  A thin line is for 1 time, a thicker line indicates
+more than one time.  For example, Gilberto Titericz Junior (Rank #2) partnered with
+Stanislav Semenov one time and with Leustagos more than once.
 
 ```{r,echo=FALSE,warning=FALSE,fig.height=15,fig.width=7}
 
@@ -960,6 +978,11 @@ par(orig.par)
 
 ```
 
+From the Top Ten Players chart, we see several of the Top Ten Players, e.g., Owen Zhang, 
+Gilberto Titericz Junior and others are related in a series of team relationships.  The 
+graph below shows this community of players.  From this we see that Xavier Conort and
+Leustagos play a pivotal role by connecting many of players together in this community.
+
 ```{r,echo=FALSE}
 
 # find community where Owen, Giberto and Stansilav are located
@@ -978,6 +1001,19 @@ V(g3)$size <- V(g3)$size*1.5
 
 
 plot(g3)
+legend(-0.5,-1.1,
+       c("Gold","Silver","Bronze"),
+       fill=c("gold","darkgray","darkgoldenrod1"),
+       cex=0.75,
+       bty="n",
+       horiz=TRUE)
+legend(-0.5,-1.2,
+       c("1 time", "2 times", " 3 or more"),
+       cex=0.75,
+       pch=rep(1,3),
+       pt.cex=c(1,1.5,2),
+       bty="n",
+       horiz=TRUE)
 
 ```
 
