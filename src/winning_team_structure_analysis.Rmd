@@ -780,6 +780,19 @@ lyt <- layout_nicely(g)
 plot(g, 
      layout=lyt,
      main="Player Relationships on Winning Teams")
+legend(-0.5,1.3,
+       c("Gold","Silver","Bronze"),
+       fill=c("gold","darkgray","darkgoldenrod1"),
+       cex=0.75,
+       bty="n",
+       horiz=TRUE)
+legend(-0.5,1.2,
+       c("1 time", "2 times", " 3 or more"),
+       cex=0.75,
+       pch=rep(1,3),
+       pt.cex=c(1,2,3),
+       bty="n",
+       horiz=TRUE)
 ```
 
 
@@ -791,6 +804,11 @@ top.players <- read.csv(textConnection('
 "/kazanova",3
 "/stasg7",4
 "/abhishek",5
+"/leustagos",6
+"/efimov",7
+"/blindape",8
+"/chaiml",9
+"/tyi2000",10
 '
 ),stringsAsFactors=FALSE)
 
@@ -805,27 +823,53 @@ for (member in top.players$member.url) {
 
 plot(g,
      layout=lyt,
-     main="Top 5 Players's Relationships")
+     main="Top Ten Players")
 ```
 
 
-```{r,echo=FALSE,fig.height=6,fig.width=6}
+```{r,echo=FALSE,warning=FALSE,fig.height=15,fig.width=7}
 
 # function to focus on the neighbors of the top players
 plotTopPlayerNeighbors <- function(one.row,g) {
-  e1 <- incident_edges(g,V(g)[one.row$member.url])
-  g.top.player.neighbors <- subgraph.edges(g,e1[[1]])
-  V(g.top.player.neighbors)$label <- V(g.top.player.neighbors)$member.name
-  V(g.top.player.neighbors)$size <- V(g.top.player.neighbors)$size * 4
-  for(i in 1:length(E(g.top.player.neighbors))) {
-      E(g.top.player.neighbors)[i]$width <- switch(min(E(g.top.player.neighbors)[i]$team.count,3),1,3,5)
+#     cat(one.row$member.url,"\n")
+#     flush.console()
+  top.v <- V(g)[one.row$member.url]
+  
+  # check if top player has neighbors
+  if (degree(g,top.v) != 0) {
+      # yes- get neighboring players
+       e1 <- incident_edges(g,top.v)
+      g.top.player.neighbors <- subgraph.edges(g,e1[[1]])
+      V(g.top.player.neighbors)$label <- V(g.top.player.neighbors)$member.name
+      for(i in 1:length(E(g.top.player.neighbors))) {
+          E(g.top.player.neighbors)[i]$width <- switch(min(E(g.top.player.neighbors)[i]$team.count,3),1,3,5)
+      }
+  } else {
+      # no-just get top player vertex
+      g.top.player.neighbors <- induced_subgraph(g,top.v)
   }
+ 
+  V(g.top.player.neighbors)$size <- V(g.top.player.neighbors)$size * 4
+  if (degree(g.top.player.neighbors,V(g.top.player.neighbors)[one.row$member.url]) == 0 || 
+      degree(g.top.player.neighbors,V(g.top.player.neighbors)[one.row$member.url]) == 4) {
+      lyt <- layout_in_circle(g.top.player.neighbors)
+  } else {
+      lyt <- layout_nicely(g.top.player.neighbors)
+  }
+ 
   plot(g.top.player.neighbors,
+       layout=lyt,
        main=paste0(V(g.top.player.neighbors)[one.row$member.url]$member.name,
                     "\nRank #",one.row$rank))
 }
 
-a_ply(top.players,1,plotTopPlayerNeighbors,g)
+# specify layout for top players
+layout(matrix(1:10,ncol=2,byrow = TRUE))
+par(oma=c(0,0,3,0))
+a_ply(top.players[1:10,],1,plotTopPlayerNeighbors,g)
+mtext("Teammates of Top Ten Players",side = 3,line=0,outer = TRUE,font=2,cex=1.1)
+layout(matrix(1))
+par(orig.par)
 
 ```
 
