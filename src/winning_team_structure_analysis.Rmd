@@ -4,10 +4,6 @@ author: "Jim Thompson"
 date: "August 13, 2015"
 output: html_document
 ---
-
-Building on the data collected for the [Kaggle Leaderboard Medal Count By Country](https://www.kaggle.com/jimthompson/introducing-kaggle-scripts/kaggle-competition-medal-count-analysis)
-we examine the structure of winning teams using the **igraph** package.
-
 ```{r,echo=FALSE}
 # this creates team data from extract of web scraping Kaggle Leaderboard pages
 # Web scraping code and data prep can be found at https://github.com/jimthompson5802/kaggle-RScript
@@ -724,12 +720,13 @@ raw.team.df <- read.csv(textConnection('
 ),stringsAsFactors=FALSE)
 ```
 
-You can also embed plots, for example:
+```{r,echo=FALSE,message=FALSE}
+# set up for processing
 
-```{r,fig.height=6,fig.width=6,echo=FALSE,message=FALSE}
 library(igraph)
 library(plyr)
 
+# save original graphic parameters
 orig.par <- par()
 
 # creates graph oriented data
@@ -765,8 +762,41 @@ createGraphData <- function (raw.team.df) {
 
   return(list(vertices=vertices.df, edges=edges.df))
 }
+```
+
+Building on the data collected for the [Kaggle Leaderboard Medal Count By Country](https://www.kaggle.com/jimthompson/introducing-kaggle-scripts/kaggle-competition-medal-count-analysis)
+we examine the relationships of Kaggle players on winning teams, teams placing in the top 3 places, using the **igraph** package.
+
+Team structures are depicted using a graph model.  In this model, Kaggle
+players are reprsented as vertices of a graph.  An edge exists between two vertices if
+the players represented by those vertices competed on the same team in a Kaggle 
+competition.  We illustrate this concept with the following example.
 
 
+
+```{r,echo=FALSE,fig.width=6,fig.height=6}
+df <- subset(raw.team.df,competition.name=="Heritage Health Prize")
+graph <- createGraphData(df)
+
+g <- graph_from_data_frame(graph[["edges"]],directed=FALSE,vertices=graph[["vertices"]])
+V(g)$label <- V(g)$member.name
+V(g)$size <- 25
+
+lyt <- layout_nicely(g)
+plot(g,
+     layout=lyt,
+     main="Heritage Health Prize")
+legend(-0.9,1.4,
+       c("Gold","Silver","Bronze"),
+       fill=c("gold","darkgray","darkgoldenrod1"),
+       cex=1.0,
+       bty="n",
+       horiz=TRUE)
+```
+
+
+
+```{r,echo=FALSE,Efig.height=8,fig.width=7}
 # create a graph to perform initial data scrubbing
 df <- subset(raw.team.df) #,competition.name=="Heritage Health Prize")
 graph <- createGraphData(df)
@@ -796,7 +826,7 @@ legend(-0.5,1.2,
 ```
 
 
-```{r,echo=FALSE,fig.height=6,fig.width=6}
+```{r,echo=FALSE,fig.height=7,fig.width=7}
 top.players <- read.csv(textConnection('
 "member.url","rank"
 "/owenzhang1",1
@@ -894,5 +924,12 @@ plot(g3)
 
 ```
 
+### Appendix
+List of Kaggle competitions covered by this analysis.
+```{r,echo=FALSE}
+competition.list <- unique(raw.team.df$competition.name)
+competition.list <- competition.list[order(competition.list)]
+competition.list
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```
+
