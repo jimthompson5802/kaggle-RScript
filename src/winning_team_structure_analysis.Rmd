@@ -7,7 +7,7 @@ output: html_document
 ```{r,echo=FALSE}
 # this creates team data from extract of web scraping Kaggle Leaderboard pages
 # Web scraping code and data prep can be found at https://github.com/jimthompson5802/kaggle-RScript
-# datq only covers teams placing in the top 3 positions.
+# data only covers teams placing in the top 3 positions.
 raw.team.df <- read.csv(textConnection('
 "competition.name","team.type","team.place","team.name","member.name","member.url"
 "Heritage Health Prize","team-link team-player",1,"POWERDOT","David Vogel","/users/1941/david-vogel"
@@ -910,7 +910,7 @@ for (member in top.players$member.url) {
 
 plot(g,
      layout=lyt,
-     main="Top Ten Players")
+     main="Top Ten Players \n on Winning Teams")
 legend(-0.5,-1.1,
        c("Gold","Silver","Bronze"),
        fill=c("gold","darkgray","darkgoldenrod1"),
@@ -980,8 +980,7 @@ par(orig.par)
 
 From the Top Ten Players chart, we see several of the Top Ten Players, e.g., Owen Zhang, 
 Gilberto Titericz Junior and others are related in a series of team relationships.  The 
-graph below shows this community of players.  From this we see that Xavier Conort and
-Leustagos play a pivotal role by connecting many of players together in this community.
+graph below shows this community of players.  
 
 ```{r,echo=FALSE}
 
@@ -999,8 +998,9 @@ V(g3)[idx]$label <- V(g3)[idx]$member.name
 V(g3)[idx]$label.cex <- 0.75
 V(g3)$size <- V(g3)$size*1.5
 
-
-plot(g3)
+set.seed(14)
+plot(g3,
+     main="Community of Kaggle Players")
 legend(-0.5,-1.1,
        c("Gold","Silver","Bronze"),
        fill=c("gold","darkgray","darkgoldenrod1"),
@@ -1016,6 +1016,25 @@ legend(-0.5,-1.2,
        horiz=TRUE)
 
 ```
+
+For this community of players we calculate the Google PageRank of each player. 
+From this we see that Xavier Conort and
+Leustagos have the top 2 PageRank values and play a pivotal role by connecting many players together in this community.
+
+```{r,echo=FALSE}
+# calculate pagerank of each player
+pr <- page_rank(g3)
+
+# order player by descending value of pagerank
+page.rank <- pr$vector[order(-pr$vector)]
+
+# determine player name
+names(page.rank) <- sapply(names(page.rank),function(node){V(g3)[node]$member.name})
+
+cat("Page Rank Measure of Kaggle Players\n")
+print(page.rank)
+```
+
 
 ### Appendix
 List of Kaggle competitions covered by this analysis.
