@@ -775,13 +775,12 @@ Data for this analysis comes from the Kaggle Leaderboard as of August 8, 2015.  
 data was extracted by web-scraping Kaggle's leaderboard web pages.  Source code for 
 web-scraping and data pre-processing can be found at this [github repository](https://github.com/jimthompson5802/kaggle-RScript).
 
-In terms of team structure we find over the course of many competitions, a person teaming up 
-with one set of players for a competition teaming up with 
-a different set of players on another competition.  These relationships 
+We find over the course of many competitions some players teaming up 
+with different set of players.  These series of relationships 
 eventually build up to separate communities of players.
 
 From a performance view we found a higher percentage of multi-player teams achieving 
-a Gold or Silver medal.  We hypothesize team collaboration is one factor for this 
+a Gold or Silver medal than single-player teams.  We hypothesize team collaboration is one factor for this 
 observation.
 
 
@@ -1076,10 +1075,11 @@ records on teams placing in the top 3 positions.  Of the `r nrow(unique(team.vs.
 `r nrow(unique(team.vs.single.df[team.vs.single.df$team.type=="multi-player",c("competition.name","medal")]))`
 multi-player records and `r nrow(unique(team.vs.single.df[team.vs.single.df$team.type=="single-player",c("competition.name","medal")]))` single-player records.  
 
-There is a wide difference in the number of multi-player vs single-player teams.  Because of this 
-we will look within each team type the percentage of teams achieving Gold, Silver or Bronze medals.
+There is a wide difference in the number of multi-player vs single-player teams.  Because of this difference, 
+this analysis will focus on the percentage of teams achieving Gold, Silver or Bronze medals between 
+multi-player vs single-player teams.
 
-The medal distribution of the multi-player and single-player teams is shown in the chart below.
+Medal distribution of the multi-player and single-player teams is shown in the chart below.
 The chart shows for each team type the percentage, and in parenthesis the 
 number of teams, achieving Gold, Silver or Bronze medals.
 
@@ -1122,7 +1122,7 @@ higher than single-player teams, `r paste0(round(subset(tvs.plot.df,team.type=="
 higher percentage (`r paste0(round(subset(tvs.plot.df,team.type=="single-player" & medal=="Bronze",select="percent"),1),"%")`) than multi-player teams (`r paste0(round(subset(tvs.plot.df,team.type=="multi-player" & medal=="Bronze",select="percent"),1),"%")`).
 
 This data suggest persons participating on multi-player teams may place higher than if they
-competed as a single player.  This may be the result of the colloaboration of team members.
+competed as a single player.  This may be the result of the collaboration of team members.
 
 ### Appendix
 List of Kaggle competitions covered by this analysis.
