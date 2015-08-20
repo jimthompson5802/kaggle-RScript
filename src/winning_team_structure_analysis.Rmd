@@ -1,7 +1,7 @@
 ---
 title: "Team Structures and Performance of Winning Kaggle Teams"
 author: "Jim Thompson"
-date: "August 20, 2015"
+date: "August 15, 2015 (Revised: August 20, 2015)"
 output: html_document
 ---
 ```{r,echo=FALSE}
@@ -859,7 +859,9 @@ legend(-0.5,-1.2,
        horiz=TRUE)
 ```
 
-From this graph depiction we can calculate several measures.  First the number of 
+From this representation we can see subsets of Kaggle players forming communities.
+
+This graph depiction allows us to calculate several measures.  First the number of 
 vertices in the graph, `r length(V(g))`, indicate the number Kaggle
 players that participated on teams that placed in the top 3.  For each player we
 can determine the number of other players he or she teamed up with by counting the
