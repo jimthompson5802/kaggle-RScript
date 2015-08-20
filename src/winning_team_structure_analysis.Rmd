@@ -727,6 +727,7 @@ raw.team.df <- read.csv(textConnection('
 library(igraph)
 library(plyr)
 library(ggplot2)
+library(stringr)
 
 # save original graphic parameters
 orig.par <- par()
@@ -1034,6 +1035,54 @@ names(page.rank) <- sapply(names(page.rank),function(node){V(g3)[node]$member.na
 cat("Page Rank Measure of Kaggle Players\n")
 print(page.rank)
 ```
+
+```{r,echo=FALSE,fig.width==4,fig.height=6}
+# set up data set for comparing team vs single player performance
+team.vs.single.df <- adply(raw.team.df,1,mutate,
+                          medal=factor(switch(team.place,"Gold","Silver","Bronze"),
+                                       levels=c("Gold","Silver","Bronze")))
+team.vs.single.df$player.type <- str_extract(team.vs.single.df$team.type,
+                                            "(team-player|single-player)$")
+
+# calculate medal percentage by teams vs single player
+part1 <- ddply(team.vs.single.df,.(competition.name,medal,player.type),summarize,count=1)
+part2 <- ddply(part1,.(player.type),summarize,overall.count=sum(count))
+part3 <- ddply(part1,.(player.type,medal),summarize,count=sum(count))
+team.vs.single.df <- merge(part3,part2)
+team.vs.single.df <- adply(team.vs.single.df,1,mutate,percent=100*count/overall.count)
+
+# determine location for printing labels
+find_midpoints <- function(df) {
+  cumsums <- c(0, cumsum(df$percent))
+  diffs <- diff(cumsums)
+  pos <- head(cumsums, -1) + (0.5 * diffs)
+  return(data.frame(player.type=df$player.type,
+                    medal=df$medal,
+                    count=df$count,
+                    overall.count=df$overall.count,
+                    percent=df$percent,
+                    pos,
+                    stringsAsFactors = FALSE))
+}
+team.vs.single.df <- ddply(team.vs.single.df,.(player.type),find_midpoints)
+
+# plot chart
+ggplot(team.vs.single.df) +
+    # facet_grid(.~player.type) +
+    geom_bar(aes(x=player.type,y=percent,fill=medal,binwidth=0.5),stat="identity") +
+    scale_fill_manual(values=c("gold","darkgray","darkgoldenrod1"),
+                      name="Medal") +
+    geom_text(aes(x=player.type,y=pos,label=paste0(round(percent,1),"%\n(",count,")"))) +
+    xlab("Player Type") +
+    ylab("Percent") +
+    ggtitle("Player Type vs Medal Position") +
+    theme(axis.text=element_text(face="bold",size=15),
+          axis.title=element_text(face="bold",size=15))
+
+
+```
+
+
 
 
 ### Appendix
