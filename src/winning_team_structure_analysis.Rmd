@@ -1,5 +1,5 @@
 ---
-title: "Visualizing Team Structures of Winning Kaggle Teams"
+title: "Team Structures and Performance of Winning Kaggle Teams"
 author: "Jim Thompson"
 date: "August 15, 2015"
 output: html_document
@@ -768,20 +768,31 @@ createGraphData <- function (raw.team.df) {
 ```
 
 Building on the data collected for the [Kaggle Leaderboard Medal Count By Country](https://www.kaggle.com/jimthompson/introducing-kaggle-scripts/kaggle-competition-medal-count-analysis)
-we examine the relationships of Kaggle players on winning teams, i.e.,placing in the top 3, using the **igraph** package.  The Kaggle competitions covered by
-this analysis are shown in the Appendix.
+we examine the relationships of Kaggle players on winning teams, i.e.,placing in the top 3, using the **igraph** package.  In addition, we look the performance multi-player vs single-player teams.
+The Kaggle competitions covered by this analysis are shown in the Appendix.
 
 Data for this analysis comes from the Kaggle Leaderboard as of August 8, 2015.  The
 data was extracted by web-scraping Kaggle's leaderboard web pages.  Source code for 
 web-scraping and data pre-processing can be found at this [github repository](https://github.com/jimthompson5802/kaggle-RScript).
 
+In terms of team structure we find over the course of many competitions, a person teaming up 
+with one set of players for a competition teaming up with 
+a different set of players on another competition.  These relationships 
+eventually build up to separate communities of players.
+
+From a performance view we found a higher percentage of multi-player teams achieving 
+a Gold or Silver medal.  We hypothesize team collaboration is one factor for this 
+observation.
+
+
+### Team Structure
 Team structures are depicted using a graph model.  In this model, Kaggle
 players are represented as vertices of a graph.  An edge exists between two vertices if
 the players represented by those vertices competed on the same team in a Kaggle 
 competition.  We illustrate this concept with the following example.
 
 For the Heritage Health Prize, which ended in April 2013, the top 3 teams are shown
-in the following table.
+in the following table. 
 
 Place|Team Name|Team Members
 -----|---------|-------------
@@ -983,7 +994,7 @@ From the Top Ten Players chart, we see several of the Top Ten Players, e.g., Owe
 Gilberto Titericz Junior and others are related in a series of team relationships.  The 
 graph below shows this community of players.  
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,fig.height=7,fig.width=7}
 
 # find community where Owen, Giberto and Stansilav are located
 # extract out each community subgraph
@@ -1036,27 +1047,47 @@ cat("Page Rank Measure of Kaggle Players\n")
 print(page.rank)
 ```
 
+### Team Performance
+
 ```{r,echo=FALSE,fig.width==4,fig.height=6}
 # set up data set for comparing team vs single player performance
 team.vs.single.df <- adply(raw.team.df,1,mutate,
                           medal=factor(switch(team.place,"Gold","Silver","Bronze"),
                                        levels=c("Gold","Silver","Bronze")))
-team.vs.single.df$player.type <- str_extract(team.vs.single.df$team.type,
+team.vs.single.df$team.type <- str_extract(team.vs.single.df$team.type,
                                             "(team-player|single-player)$")
+team.vs.single.df$team.type <- str_replace(team.vs.single.df$team.type,
+                                             "team-player","multi-player")
 
 # calculate medal percentage by teams vs single player
-part1 <- ddply(team.vs.single.df,.(competition.name,medal,player.type),summarize,count=1)
-part2 <- ddply(part1,.(player.type),summarize,overall.count=sum(count))
-part3 <- ddply(part1,.(player.type,medal),summarize,count=sum(count))
-team.vs.single.df <- merge(part3,part2)
-team.vs.single.df <- adply(team.vs.single.df,1,mutate,percent=100*count/overall.count)
+part1 <- ddply(team.vs.single.df,.(competition.name,medal,team.type),summarize,count=1)
+part2 <- ddply(part1,.(team.type),summarize,overall.count=sum(count))
+part3 <- ddply(part1,.(team.type,medal),summarize,count=sum(count))
+tvs.plot.df <- merge(part3,part2)
+tvs.plot.df <- adply(tvs.plot.df,1,mutate,percent=100*count/overall.count)
+```
 
+For this part of the analysis we take an assessment on whether a multi-player team
+performs better or worse than single-player team. For the `r length(unique(team.vs.single.df$competition.name))` 
+competitions covered by this analysis, we find `r nrow(unique(team.vs.single.df[c("competition.name","medal")]))`
+records on teams placing in the top 3 positions.  Of the `r nrow(unique(team.vs.single.df[c("competition.name","medal")]))` records, we have
+`r nrow(unique(team.vs.single.df[team.vs.single.df$team.type=="multi-player",c("competition.name","medal")]))`
+multi-player records and `r nrow(unique(team.vs.single.df[team.vs.single.df$team.type=="single-player",c("competition.name","medal")]))` single-player records.  
+
+There is a wide difference in the number of multi-player vs single-player teams.  Because of this 
+we will look within each team type the percentage of teams achieving Gold, Silver or Bronze medals.
+
+The medal distribution of the multi-player and single-player teams is shown in the chart below.
+The chart shows for each team type the percentage, and in parenthesis the 
+number of teams, achieving Gold, Silver or Bronze medals.
+
+```{r,echo=FALSE}
 # determine location for printing labels
 find_midpoints <- function(df) {
   cumsums <- c(0, cumsum(df$percent))
   diffs <- diff(cumsums)
   pos <- head(cumsums, -1) + (0.5 * diffs)
-  return(data.frame(player.type=df$player.type,
+  return(data.frame(team.type=df$team.type,
                     medal=df$medal,
                     count=df$count,
                     overall.count=df$overall.count,
@@ -1064,26 +1095,32 @@ find_midpoints <- function(df) {
                     pos,
                     stringsAsFactors = FALSE))
 }
-team.vs.single.df <- ddply(team.vs.single.df,.(player.type),find_midpoints)
+tvs.plot.df <- ddply(tvs.plot.df,.(team.type),find_midpoints)
 
 # plot chart
-ggplot(team.vs.single.df) +
-    # facet_grid(.~player.type) +
-    geom_bar(aes(x=player.type,y=percent,fill=medal,binwidth=0.5),stat="identity") +
+ggplot(tvs.plot.df) +
+    # facet_grid(.~team.type) +
+    geom_bar(aes(x=team.type,y=percent,fill=medal,binwidth=0.5),stat="identity") +
     scale_fill_manual(values=c("gold","darkgray","darkgoldenrod1"),
                       name="Medal") +
-    geom_text(aes(x=player.type,y=pos,label=paste0(round(percent,1),"%\n(",count,")"))) +
-    xlab("Player Type") +
+    geom_text(aes(x=team.type,y=pos,label=paste0(round(percent,1),"%\n(",count,")"))) +
+    xlab("Team Type") +
     ylab("Percent") +
-    ggtitle("Player Type vs Medal Position") +
+    ggtitle("Team Type vs Medal Position") +
     theme(axis.text=element_text(face="bold",size=15),
           axis.title=element_text(face="bold",size=15))
 
 
 ```
 
+From the chart we see `r paste0(round(subset(tvs.plot.df,team.type=="multi-player" & medal=="Gold",select="percent"),1),"%")`
+of the multi-player teams achieved a Gold medal compared to 
+`r paste0(round(subset(tvs.plot.df,team.type=="single-player" & medal=="Gold",select="percent"),1),"%")` of single-player teams.  The percentage of multi-player teams, `r paste0(round(subset(tvs.plot.df,team.type=="multi-player" & medal=="Silver",select="percent"),1),"%")`, achieving Silver was slightly 
+higher than single-player teams, `r paste0(round(subset(tvs.plot.df,team.type=="single-player" & medal=="Silver",select="percent"),1),"%")`.  Only in the Bronze medal did single-player teams have a
+higher percentage (`r paste0(round(subset(tvs.plot.df,team.type=="single-player" & medal=="Bronze",select="percent"),1),"%")`) than multi-player teams (`r paste0(round(subset(tvs.plot.df,team.type=="multi-player" & medal=="Bronze",select="percent"),1),"%")`).
 
-
+This data suggest persons participating on multi-player teams may place higher than if they
+competed as a single player.  This may be the result of the colloaboration of team members.
 
 ### Appendix
 List of Kaggle competitions covered by this analysis.
