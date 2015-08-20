@@ -1,7 +1,7 @@
 ---
 title: "Team Structures and Performance of Winning Kaggle Teams"
 author: "Jim Thompson"
-date: "August 15, 2015"
+date: "August 20, 2015"
 output: html_document
 ---
 ```{r,echo=FALSE}
