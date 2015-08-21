@@ -837,7 +837,7 @@ graph <- createGraphData(df)
 g <- graph_from_data_frame(graph[["edges"]],directed=FALSE,vertices=graph[["vertices"]])
 V(g)$label <- NA
 
-set.seed(123)
+set.seed(122)
 lyt <- layout_nicely(g)
 
 plot(g, 
